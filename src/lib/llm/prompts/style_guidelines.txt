@@ -1,0 +1,53 @@
+## Style Guidelines for AI Research Content
+
+### Writing Principles
+
+1. **Clarity First**: Explain complex concepts in clear, accessible language
+2. **Show, Don't Tell**: Use examples and code to illustrate points
+3. **Progressive Disclosure**: Start simple, then add complexity
+4. **Active Voice**: Prefer "The model processes data" over "Data is processed by the model"
+
+### Audience-Specific Adaptations
+
+#### Beginner Audience
+- Use analogies and real-world comparisons
+- Define technical terms when first introduced
+- Keep code examples simple and well-commented
+- Avoid assumed knowledge
+- Include "Why it matters" sections
+
+#### Practitioner Audience
+- Balance theory and practice
+- Include production-ready code examples
+- Reference best practices and common pitfalls
+- Assume basic ML/AI knowledge
+- Focus on "How to implement" sections
+
+#### Expert Audience
+- Dive into technical details
+- Include mathematical formulations
+- Reference academic papers
+- Discuss edge cases and optimizations
+- Focus on advanced techniques and research
+
+### Content Structure
+
+1. **Introduction**: Context and motivation
+2. **Core Content**: Main concepts with examples
+3. **Code Examples**: Practical demonstrations
+4. **Key Takeaways**: Summarized learning points
+5. **Further Reading**: Links to related resources
+
+### Citation Style
+
+- Academic papers: Author et al. (Year) format
+- Web sources: [Title](URL) markdown format
+- Code repositories: GitHub link with description
+
+### Formatting Standards
+
+- Headers: Use H2 for main sections, H3 for subsections
+- Code: Always specify language in code blocks
+- Lists: Use numbered lists for sequences, bullets for items
+- Emphasis: Use **bold** for key terms, *italics* for emphasis
+

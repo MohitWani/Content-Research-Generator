@@ -1,0 +1,47 @@
+{
+  "tone": "professional",
+  "style": "technical",
+  "voice_characteristics": {
+    "formality": "high",
+    "technical_depth": "medium",
+    "humor": "low",
+    "engagement": "high"
+  },
+  "writing_preferences": {
+    "sentence_length": "varied",
+    "paragraph_structure": "clear",
+    "use_examples": true,
+    "use_analogies": true,
+    "use_code_snippets": true
+  },
+  "content_guidelines": {
+    "always_include": [
+      "practical examples",
+      "clear explanations",
+      "actionable takeaways"
+    ],
+    "avoid": [
+      "excessive jargon without explanation",
+      "overly casual language",
+      "unsubstantiated claims"
+    ]
+  },
+  "audience_adaptations": {
+    "beginner": {
+      "formality": "medium",
+      "technical_depth": "low",
+      "use_analogies": true
+    },
+    "practitioner": {
+      "formality": "high",
+      "technical_depth": "medium",
+      "use_code_snippets": true
+    },
+    "expert": {
+      "formality": "high",
+      "technical_depth": "high",
+      "use_advanced_concepts": true
+    }
+  }
+}
+
