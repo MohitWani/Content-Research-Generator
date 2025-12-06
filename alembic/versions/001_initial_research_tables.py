@@ -19,21 +19,19 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    # Create research_queries table using raw SQL to avoid enum creation issues
-    op.execute("""
-        CREATE TYPE topiccategory AS ENUM ('core_ai', 'practical_implementation');
-        
-        CREATE TABLE research_queries (
-            id SERIAL PRIMARY KEY,
-            query_text TEXT NOT NULL,
-            topic_category topiccategory,
-            target_audience VARCHAR(50),
-            content_type VARCHAR(50),
-            status VARCHAR(20),
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        );
-    """)
+    # Create research_queries table - using VARCHAR for topic_category for flexibility
+    op.create_table(
+        'research_queries',
+        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('query_text', sa.Text(), nullable=False),
+        sa.Column('topic_category', sa.String(length=50), nullable=True),
+        sa.Column('target_audience', sa.String(length=50), nullable=True),
+        sa.Column('content_type', sa.String(length=50), nullable=True),
+        sa.Column('status', sa.String(length=20), nullable=True),
+        sa.Column('created_at', sa.DateTime(), nullable=True),
+        sa.Column('updated_at', sa.DateTime(), nullable=True),
+        sa.PrimaryKeyConstraint('id')
+    )
     
     # Create indexes for research_queries
     op.create_index(
@@ -136,7 +134,4 @@ def downgrade() -> None:
     op.drop_index('idx_research_queries_created_at', table_name='research_queries')
     op.drop_index('idx_research_queries_status', table_name='research_queries')
     op.drop_table('research_queries')
-    
-    # Drop enum type
-    op.execute("DROP TYPE IF EXISTS topiccategory")
 

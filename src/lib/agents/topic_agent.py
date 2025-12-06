@@ -1,6 +1,6 @@
 """
 Topic Agent for query categorization
-Categorizes user queries as core AI or practical implementation topics
+Categorizes user queries into AI, software development, and tech topics
 Maps to: spec.md → Story 2, FR1
 """
 from typing import Optional
@@ -14,11 +14,21 @@ from src.common.logger import setup_logger
 
 logger = setup_logger(__name__)
 
+# Category mapping for string to enum conversion
+CATEGORY_MAP = {
+    "core_ai": TopicCategory.CORE_AI,
+    "practical_implementation": TopicCategory.PRACTICAL_IMPLEMENTATION,
+    "software_development": TopicCategory.SOFTWARE_DEVELOPMENT,
+    "web_development": TopicCategory.WEB_DEVELOPMENT,
+    "devops": TopicCategory.DEVOPS,
+    "general_tech": TopicCategory.GENERAL_TECH,
+}
+
 
 class TopicAgent:
     """
     Agent for categorizing research queries
-    Determines if a query is about core AI concepts or practical implementation
+    Handles AI, software development, and general tech topics
     """
     
     def __init__(self, llm: Optional[BedrockLLM] = None):
@@ -51,15 +61,43 @@ class TopicAgent:
         query = query.strip()
         
         try:
-            # Load and format prompt
-            prompt = load_prompt("topic_categorization", query=query)
+            # Build categorization prompt
+            prompt = f"""Analyze this research query and categorize it.
+
+Query: {query}
+
+Categories:
+1. core_ai - Core AI/ML concepts, algorithms, research papers, mathematical foundations
+   Examples: transformer architecture, attention mechanism, neural networks, backpropagation
+   
+2. practical_implementation - Practical AI implementation, tools, frameworks, tutorials
+   Examples: how to use LangChain, RAG implementation, fine-tuning models, prompt engineering
+   
+3. software_development - General software development, programming, system design
+   Examples: design patterns, clean code, testing, API design, microservices
+   
+4. web_development - Web technologies, frontend, backend, databases
+   Examples: React, Node.js, REST APIs, GraphQL, SQL, MongoDB
+   
+5. devops - DevOps, cloud, infrastructure, deployment
+   Examples: Docker, Kubernetes, CI/CD, AWS, Azure, monitoring
+   
+6. general_tech - Other technology topics
+   Examples: blockchain, IoT, cybersecurity, general tech news
+
+Respond with JSON:
+{{
+    "category": "one of the category keys above",
+    "confidence": 0.0 to 1.0,
+    "reasoning": "Brief explanation of categorization",
+    "is_ai_related": true/false (whether this is an AI/ML topic)
+}}"""
             
-            # Invoke LLM for categorization
             logger.debug(f"Categorizing query: {query[:100]}...")
             
             response = await self.llm.ainvoke(
                 prompt=prompt,
-                system_prompt="You are an expert AI topic classifier. Respond only with valid JSON.",
+                system_prompt="You are an expert tech topic classifier. Categorize queries accurately. Respond only with valid JSON.",
                 parse_json=True,
             )
             
@@ -67,33 +105,15 @@ class TopicAgent:
             if not isinstance(response, dict):
                 raise QueryCategorizationError(f"Invalid response format: expected dict, got {type(response)}")
             
-            # Check if AI-related
-            is_ai_related = response.get("is_ai_related", True)
-            if not is_ai_related:
-                raise QueryCategorizationError(
-                    f"Query is not AI related: {response.get('reasoning', 'No reasoning provided')}"
-                )
-            
-            # Parse category
-            category_str = response.get("category")
-            if category_str is None:
-                raise QueryCategorizationError(
-                    f"Invalid response: missing category field. Response: {response}"
-                )
+            # Parse category - no longer reject non-AI queries
+            category_str = response.get("category", "general_tech")
+            is_ai_related = response.get("is_ai_related", False)
             
             # Convert to enum
-            try:
-                if category_str == "core_ai":
-                    category = TopicCategory.CORE_AI
-                elif category_str == "practical_implementation":
-                    category = TopicCategory.PRACTICAL_IMPLEMENTATION
-                else:
-                    # Default to practical for unknown categories
-                    logger.warning(f"Unknown category '{category_str}', defaulting to practical")
-                    category = TopicCategory.PRACTICAL_IMPLEMENTATION
-            except Exception as e:
-                logger.warning(f"Category conversion error: {e}, defaulting to practical")
-                category = TopicCategory.PRACTICAL_IMPLEMENTATION
+            category = CATEGORY_MAP.get(category_str)
+            if category is None:
+                logger.warning(f"Unknown category '{category_str}', defaulting to general_tech")
+                category = TopicCategory.GENERAL_TECH
             
             # Extract confidence and reasoning
             confidence = float(response.get("confidence", 0.5))
@@ -114,7 +134,15 @@ class TopicAgent:
             raise
         except Exception as e:
             logger.error(f"Categorization error: {e}")
-            raise QueryCategorizationError(f"Failed to categorize query: {e}")
+            # Fallback to keyword-based categorization
+            logger.info("Falling back to keyword-based categorization")
+            category = self.categorize_by_keywords(query)
+            return TopicCategorizationResult(
+                category=category.value,
+                confidence=0.5,
+                reasoning="Fallback keyword-based categorization",
+                is_ai_related=category in [TopicCategory.CORE_AI, TopicCategory.PRACTICAL_IMPLEMENTATION],
+            )
     
     async def is_ai_related(self, query: str) -> bool:
         """
@@ -129,10 +157,8 @@ class TopicAgent:
         try:
             result = await self.categorize_query(query)
             return result.is_ai_related
-        except QueryCategorizationError as e:
-            if "not ai related" in str(e).lower():
-                return False
-            raise
+        except Exception:
+            return False
     
     def categorize_by_keywords(self, query: str) -> TopicCategory:
         """
@@ -155,36 +181,69 @@ class TopicAgent:
             "lstm", "gru", "bert", "gpt architecture",
             "self-attention", "multi-head attention",
             "embedding", "tokenization", "research paper",
-            "mathematical", "theorem", "proof", "algorithm",
-            "complexity", "optimization", "convergence",
+            "mathematical", "theorem", "proof", "algorithm complexity",
+            "optimization", "convergence", "deep learning",
         ]
         
-        # Practical implementation keywords
-        practical_keywords = [
-            "how to", "step by step", "tutorial", "guide",
-            "implement", "build", "create", "deploy",
+        # Practical AI implementation keywords
+        practical_ai_keywords = [
             "langchain", "llamaindex", "openai api",
-            "huggingface", "pytorch tutorial", "tensorflow tutorial",
+            "huggingface", "pytorch", "tensorflow",
             "rag", "retrieval augmented", "vector database",
             "pinecone", "chromadb", "faiss", "weaviate",
             "fine-tune", "fine-tuning", "prompt engineering",
-            "api integration", "sdk", "library",
+            "llm", "large language model", "chatgpt",
+            "claude", "gemini", "ai agent", "ai tool",
+        ]
+        
+        # Software development keywords
+        software_dev_keywords = [
+            "design pattern", "clean code", "solid principles",
+            "unit test", "integration test", "tdd", "bdd",
+            "refactor", "architecture", "microservice",
+            "api design", "data structure", "algorithm",
+            "git", "version control", "code review",
+        ]
+        
+        # Web development keywords
+        web_dev_keywords = [
+            "react", "vue", "angular", "javascript", "typescript",
+            "node.js", "express", "fastapi", "django", "flask",
+            "html", "css", "frontend", "backend", "fullstack",
+            "rest api", "graphql", "websocket",
+            "sql", "postgresql", "mongodb", "redis",
+        ]
+        
+        # DevOps keywords
+        devops_keywords = [
+            "docker", "kubernetes", "k8s", "container",
+            "ci/cd", "jenkins", "github actions", "gitlab",
+            "aws", "azure", "gcp", "cloud",
+            "terraform", "ansible", "helm",
+            "monitoring", "prometheus", "grafana",
+            "deployment", "infrastructure",
         ]
         
         # Count keyword matches
-        core_count = sum(1 for kw in core_ai_keywords if kw in query_lower)
-        practical_count = sum(1 for kw in practical_keywords if kw in query_lower)
+        scores = {
+            TopicCategory.CORE_AI: sum(1 for kw in core_ai_keywords if kw in query_lower),
+            TopicCategory.PRACTICAL_IMPLEMENTATION: sum(1 for kw in practical_ai_keywords if kw in query_lower),
+            TopicCategory.SOFTWARE_DEVELOPMENT: sum(1 for kw in software_dev_keywords if kw in query_lower),
+            TopicCategory.WEB_DEVELOPMENT: sum(1 for kw in web_dev_keywords if kw in query_lower),
+            TopicCategory.DEVOPS: sum(1 for kw in devops_keywords if kw in query_lower),
+        }
         
-        if core_count > practical_count:
-            return TopicCategory.CORE_AI
-        elif practical_count > core_count:
-            return TopicCategory.PRACTICAL_IMPLEMENTATION
-        else:
-            # Default to practical for ambiguous queries
-            return TopicCategory.PRACTICAL_IMPLEMENTATION
+        # Find category with highest score
+        max_score = max(scores.values())
+        if max_score > 0:
+            for category, score in scores.items():
+                if score == max_score:
+                    return category
+        
+        # Default to general_tech for unknown queries
+        return TopicCategory.GENERAL_TECH
 
 
 def get_topic_agent(llm: Optional[BedrockLLM] = None) -> TopicAgent:
     """Factory function to create TopicAgent"""
     return TopicAgent(llm=llm)
-

@@ -44,6 +44,19 @@ services:
       - ./data:/app/data
     restart: unless-stopped
 
+  # Streamlit UI
+  ui:
+    build:
+      context: ./streamlit_app
+      dockerfile: Dockerfile
+    container_name: research_ui
+    ports:
+      - "8501:8501"
+    environment:
+      - API_URL=http://api:8000
+    depends_on:
+      - api
+    restart: unless-stopped
+
 volumes:
   postgres_data:
-

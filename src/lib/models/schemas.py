@@ -7,13 +7,19 @@ from datetime import datetime
 from typing import Dict, List, Optional, Any
 from enum import Enum
 
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, field_validator
 
 
 class TopicCategoryEnum(str, Enum):
     """Topic category for research queries"""
+    # AI Topics
     CORE_AI = "core_ai"
     PRACTICAL_IMPLEMENTATION = "practical_implementation"
+    # Software Development Topics
+    SOFTWARE_DEVELOPMENT = "software_development"
+    WEB_DEVELOPMENT = "web_development"
+    DEVOPS = "devops"
+    GENERAL_TECH = "general_tech"
 
 
 class TargetAudienceEnum(str, Enum):
@@ -73,10 +79,10 @@ class ResearchStatusResponse(BaseModel):
     id: int = Field(..., description="Query ID")
     query_text: str = Field(..., description="Original query text")
     topic_category: Optional[TopicCategoryEnum] = Field(
-        None, 
+        default=TopicCategoryEnum.CORE_AI, 
         description="Categorized topic type"
     )
-    target_audience: Optional[str] = Field(None, description="Target audience")
+    target_audience: Optional[str] = Field(TopicCategoryEnum.CORE_AI, description="Target audience")
     status: StatusEnum = Field(..., description="Current processing status")
     created_at: datetime = Field(..., description="Creation timestamp")
     updated_at: datetime = Field(..., description="Last update timestamp")
@@ -88,11 +94,25 @@ class ResearchStatusResponse(BaseModel):
 
 class SourceSchema(BaseModel):
     """Schema for research source/citation"""
-    type: str = Field(..., description="Source type (paper, web, github)")
-    title: str = Field(..., description="Source title")
+    type: Optional[str] = Field("web", description="Source type (paper, web, github)")
+    title: Optional[str] = Field("Unknown", description="Source title")
     url: Optional[str] = Field(None, description="Source URL")
-    authors: Optional[List[str]] = Field(None, description="Authors (for papers)")
+    authors: Optional[Any] = Field(None, description="Authors (for papers)")
     published: Optional[str] = Field(None, description="Publication date")
+    
+    model_config = {"extra": "allow"}  # Allow extra fields from tools
+    
+    @field_validator("authors", mode="before")
+    @classmethod
+    def parse_authors(cls, v):
+        """Convert authors string to list if needed"""
+        if v is None:
+            return None
+        if isinstance(v, str):
+            return [a.strip() for a in v.split(",") if a.strip()]
+        if isinstance(v, list):
+            return v
+        return None
 
 
 class ResearchResultResponse(BaseModel):
@@ -238,9 +258,9 @@ class BlogPipelineRequest(BaseModel):
 
 class TopicCategorizationResult(BaseModel):
     """Result from topic categorization agent"""
-    category: Optional[TopicCategoryEnum] = Field(
-        None, 
-        description="Categorized topic type"
+    category: str = Field(
+        ..., 
+        description="Categorized topic type (core_ai, practical_implementation, software_development, etc.)"
     )
     confidence: float = Field(
         ..., 
@@ -253,7 +273,7 @@ class TopicCategorizationResult(BaseModel):
         description="Explanation for categorization"
     )
     is_ai_related: bool = Field(
-        True, 
+        False, 
         description="Whether query is AI-related"
     )
 

@@ -57,6 +57,15 @@ class BedrockLLM:
         else:
             logger.debug("Using default AWS credential chain")
         
+        # Create boto3 client with increased timeout for long research operations
+        from botocore.config import Config as BotoConfig
+        boto_config = BotoConfig(
+            read_timeout=120,  # 2 minutes for complex operations
+            connect_timeout=10,
+            retries={'max_attempts': 3, 'mode': 'adaptive'}
+        )
+        boto_kwargs["config"] = boto_config
+        
         self.bedrock_client = boto3.client(**boto_kwargs)
         
         # Initialize LangChain ChatBedrock with boto3 client
@@ -68,6 +77,8 @@ class BedrockLLM:
                 "temperature": self.temperature,
             },
         )
+        
+        logger.info(f"Bedrock client configured with 120s timeout and adaptive retry")
         
         # Output parsers
         self.json_parser = JsonOutputParser()

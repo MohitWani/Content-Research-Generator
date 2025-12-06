@@ -48,12 +48,17 @@ async def create_research_query(
         await db.refresh(query_record)
         
         # Execute research in background
+        query_id = query_record.id
+        query_text = request.query
+        target_audience_str = request.target_audience
+        
         async def run_research():
             async with get_session() as session:
                 pipeline = ResearchPipeline(db_session=session)
-                await pipeline.execute(
-                    query=request.query,
-                    target_audience=request.target_audience,
+                await pipeline.execute_for_query(
+                    query_id=query_id,
+                    query=query_text,
+                    target_audience=target_audience_str,
                 )
         
         background_tasks.add_task(run_research)

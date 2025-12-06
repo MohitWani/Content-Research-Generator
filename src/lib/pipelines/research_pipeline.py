@@ -71,7 +71,7 @@ class ResearchPipeline:
         target_audience: str = "practitioner",
     ) -> ResearchPipelineResult:
         """
-        Execute the research pipeline
+        Execute the research pipeline (creates new query record)
         
         Args:
             query: Research query
@@ -80,22 +80,57 @@ class ResearchPipeline:
         Returns:
             ResearchPipelineResult with research output
         """
+        # Create a new query record and execute
+        query_id = await self._create_query_record(query, target_audience, None)
+        return await self.execute_for_query(query_id, query, target_audience)
+    
+    async def execute_for_query(
+        self,
+        query_id: int,
+        query: str,
+        target_audience: str = "practitioner",
+    ) -> ResearchPipelineResult:
+        """
+        Execute the research pipeline for an existing query record
+        
+        Args:
+            query_id: Existing query record ID
+            query: Research query text
+            target_audience: Target audience
+        
+        Returns:
+            ResearchPipelineResult with research output
+        """
         start_time = datetime.utcnow()
         
         # Create workflow context
-        context = await self.state_manager.create_workflow("research")
+        context = await self.state_manager.create_workflow("research", query_id=query_id)
         await self.state_manager.start_workflow(context.workflow_id)
         
         try:
+            # Update query status to processing
+            await self._update_query_status(query_id, "processing")
+            
             # Step 1: Categorize topic
-            logger.info(f"Pipeline step 1: Categorizing query")
+            logger.info(f"Pipeline step 1: Categorizing query (id={query_id})")
             categorization = await self.topic_agent.categorize_query(query)
             
-            topic_category = (
-                TopicCategory.CORE_AI 
-                if categorization.category == "core_ai" 
-                else TopicCategory.PRACTICAL_IMPLEMENTATION
+            # Map category string to enum
+            category_map = {
+                "core_ai": TopicCategory.CORE_AI,
+                "practical_implementation": TopicCategory.PRACTICAL_IMPLEMENTATION,
+                "software_development": TopicCategory.SOFTWARE_DEVELOPMENT,
+                "web_development": TopicCategory.WEB_DEVELOPMENT,
+                "devops": TopicCategory.DEVOPS,
+                "general_tech": TopicCategory.GENERAL_TECH,
+            }
+            topic_category = category_map.get(
+                categorization.category, 
+                TopicCategory.GENERAL_TECH
             )
+            
+            # Update query with topic category
+            await self._update_query_category(query_id, topic_category)
             
             await self.state_manager.add_checkpoint(
                 context.workflow_id,
@@ -103,13 +138,8 @@ class ResearchPipeline:
                 data={"category": topic_category.value, "confidence": categorization.confidence},
             )
             
-            # Step 2: Create research query record
-            query_id = await self._create_query_record(
-                query, target_audience, topic_category
-            )
-            
-            # Step 3: Conduct research
-            logger.info(f"Pipeline step 2: Conducting research")
+            # Step 2: Conduct research
+            logger.info(f"Pipeline step 2: Conducting research (id={query_id})")
             await self.state_manager.add_checkpoint(
                 context.workflow_id,
                 CheckpointType.RESEARCH_STARTED,
@@ -127,8 +157,8 @@ class ResearchPipeline:
                 data={"sources_count": len(research_output.sources)},
             )
             
-            # Step 4: Persist research result
-            logger.info(f"Pipeline step 3: Persisting results")
+            # Step 3: Persist research result
+            logger.info(f"Pipeline step 3: Persisting results (id={query_id})")
             await self._persist_result(query_id, research_output)
             
             await self.state_manager.add_checkpoint(
@@ -145,7 +175,7 @@ class ResearchPipeline:
             
             logger.info(
                 f"Research pipeline completed in {execution_time:.2f}s "
-                f"(completeness: {research_output.completeness_score:.2f})"
+                f"(id={query_id}, completeness: {research_output.completeness_score:.2f})"
             )
             
             return ResearchPipelineResult(
@@ -158,9 +188,11 @@ class ResearchPipeline:
             )
             
         except QueryCategorizationError as e:
+            await self._update_query_status(query_id, "failed")
             await self.state_manager.fail_workflow(context.workflow_id, str(e))
             raise
         except Exception as e:
+            await self._update_query_status(query_id, "failed")
             await self.state_manager.fail_workflow(context.workflow_id, str(e))
             logger.error(f"Research pipeline failed: {e}")
             raise
@@ -193,7 +225,7 @@ class ResearchPipeline:
         self,
         query: str,
         target_audience: str,
-        topic_category: TopicCategory,
+        topic_category: Optional[TopicCategory],
     ) -> int:
         """Create research query record in database"""
         if not self.db_session:
@@ -203,18 +235,42 @@ class ResearchPipeline:
             query_text=query,
             target_audience=target_audience,
             topic_category=topic_category.value if topic_category else None,
-            status="processing",
+            status="pending",
         )
         self.db_session.add(research_query)
         await self.db_session.flush()
         return research_query.id
+    
+    async def _update_query_status(self, query_id: int, status: str) -> None:
+        """Update query status"""
+        if not self.db_session or query_id == 0:
+            return
+        
+        query = await self.db_session.get(ResearchQuery, query_id)
+        if query:
+            query.status = status
+            await self.db_session.flush()
+    
+    async def _update_query_category(
+        self, 
+        query_id: int, 
+        topic_category: TopicCategory
+    ) -> None:
+        """Update query topic category"""
+        if not self.db_session or query_id == 0:
+            return
+        
+        query = await self.db_session.get(ResearchQuery, query_id)
+        if query:
+            query.topic_category = topic_category.value
+            await self.db_session.flush()
     
     async def _persist_result(
         self,
         query_id: int,
         research_output: ResearchOutput,
     ) -> None:
-        """Persist research result to database"""
+        """Persist research result to database and mark query as completed"""
         if not self.db_session or query_id == 0:
             return
         
@@ -231,10 +287,8 @@ class ResearchPipeline:
         )
         self.db_session.add(result)
         
-        # Update query status
-        query = await self.db_session.get(ResearchQuery, query_id)
-        if query:
-            query.status = "completed"
+        # Update query status to completed
+        await self._update_query_status(query_id, "completed")
         
-        await self.db_session.flush()
+        await self.db_session.commit()
 

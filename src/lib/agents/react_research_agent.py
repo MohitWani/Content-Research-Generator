@@ -82,7 +82,7 @@ def create_langchain_tools() -> List[BaseTool]:
         tavily_api_key = config.TAVILY_API_KEY
         if tavily_api_key:
             tavily_search = TavilySearchResults(
-                max_results=10,
+                max_results=3,
                 search_depth="advanced",
                 include_answer=True,
                 include_raw_content=False,
@@ -480,14 +480,11 @@ class ReActResearchAgent:
                             else:
                                 result = t.invoke(tool_args)
                             
-                            # Track sources
-                            if tool_name in ["tavily_search", "arxiv_search", "github_search", "wikipedia_search", "web_search"]:
-                                query = tool_args.get("query", "") if isinstance(tool_args, dict) else str(tool_args)
-                                new_sources.append({
-                                    "tool": tool_name,
-                                    "query": query,
-                                    "timestamp": datetime.now().isoformat(),
-                                })
+                            # Extract and track sources from tool results
+                            extracted_sources = self._extract_sources_from_result(
+                                tool_name, tool_args, result
+                            )
+                            new_sources.extend(extracted_sources)
                             
                             tool_messages.append(
                                 ToolMessage(
@@ -515,7 +512,7 @@ class ReActResearchAgent:
             """Determine next step based on agent's response"""
             
             if state.get("is_complete"):
-                return "synthesize"
+                return END  # Already synthesized
             
             last_message = state["messages"][-1]
             
@@ -523,16 +520,33 @@ class ReActResearchAgent:
             if hasattr(last_message, "tool_calls") and last_message.tool_calls:
                 return "tools"
             
-            # If no tool calls and we have enough info, synthesize
-            if state["iteration_count"] >= 3 and len(state.get("sources", [])) >= 3:
+            # If reached max iterations or have enough data, synthesize
+            if state["iteration_count"] >= state["max_iterations"]:
+                logger.info(f"Max iterations reached ({state['iteration_count']}), synthesizing...")
                 return "synthesize"
             
-            # Otherwise, end
-            return END
+            if len(state.get("sources", [])) >= 3:
+                logger.info(f"Collected {len(state.get('sources', []))} sources, synthesizing...")
+                return "synthesize"
+            
+            # If no more tool calls but we have some data, synthesize anyway
+            if state["iteration_count"] >= 2:
+                logger.info("No more tool calls, synthesizing with available data...")
+                return "synthesize"
+            
+            # Otherwise, synthesize (don't leave without synthesis)
+            return "synthesize"
         
         # Synthesis node
         async def synthesize_node(state: AgentState) -> Dict[str, Any]:
             """Synthesize all collected research into final output"""
+            
+            logger.info(f"Synthesizing research with {len(state.get('sources', []))} sources...")
+            
+            # Build context from collected sources
+            sources_summary = ""
+            for i, src in enumerate(state.get("sources", [])[:10], 1):
+                sources_summary += f"\n{i}. {src.get('title', 'Source')} - {src.get('url', '')}"
             
             synthesis_prompt = f"""Based on all the research you've gathered, synthesize a comprehensive research report.
 
@@ -540,28 +554,46 @@ Query: {state['query']}
 Category: {state['category']}
 Target Audience: {state['target_audience']}
 
+Sources collected:{sources_summary}
+
 Provide your response as a JSON object with the following structure:
 {{
-    "topic_summary": "A comprehensive summary of the topic (500-1000 words)",
+    "topic_summary": "A comprehensive summary of the topic (500-1000 words). Be thorough and informative.",
     "key_concepts": {{
-        "concept_name": "explanation",
-        ...
+        "concept_name": "detailed explanation",
+        "another_concept": "another explanation"
     }},
-    "mathematical_foundations": "Key formulas and mathematical concepts (if applicable)",
+    "mathematical_foundations": "Key formulas and mathematical concepts (if applicable, otherwise null)",
     "historical_context": "Origin, key milestones, and important researchers",
-    "implementation_examples": "Code examples and practical implementation guidance"
+    "implementation_examples": "Code examples and practical implementation guidance (if applicable)"
 }}
 
-Important: Respond ONLY with valid JSON, no additional text."""
+IMPORTANT: Respond ONLY with valid JSON. No markdown, no code blocks, just the raw JSON object."""
             
             messages = state["messages"] + [HumanMessage(content=synthesis_prompt)]
             
-            response = await self.llm.llm.ainvoke(messages)
-            
-            return {
-                "messages": [response],
-                "is_complete": True,
-            }
+            try:
+                response = await self.llm.llm.ainvoke(messages)
+                logger.info(f"Synthesis response received: {len(response.content)} chars")
+                
+                return {
+                    "messages": [response],
+                    "is_complete": True,
+                }
+            except Exception as e:
+                logger.error(f"Synthesis LLM call failed: {e}")
+                # Return a fallback response
+                fallback_content = json.dumps({
+                    "topic_summary": f"Research on: {state['query']}. Unable to synthesize due to an error.",
+                    "key_concepts": {"query": state['query']},
+                    "mathematical_foundations": None,
+                    "historical_context": None,
+                    "implementation_examples": None,
+                })
+                return {
+                    "messages": [AIMessage(content=fallback_content)],
+                    "is_complete": True,
+                }
         
         # Build the graph
         workflow = StateGraph(AgentState)
@@ -626,19 +658,36 @@ Important: Respond ONLY with valid JSON, no additional text."""
         # Run the agent
         config = {"configurable": {"thread_id": f"research_{datetime.now().timestamp()}"}}
         
-        final_state = None
+        # Accumulate state across all stream events
+        accumulated_sources = []
+        all_messages = []
+        synthesis_content = ""
+        
         async for state in self.graph.astream(initial_state, config):
-            final_state = state
-            
-            # Log progress
+            # Log and accumulate from each node's output
             for node_name, node_state in state.items():
-                if "messages" in node_state and node_state["messages"]:
-                    last_msg = node_state["messages"][-1]
-                    if hasattr(last_msg, "content") and last_msg.content:
-                        logger.debug(f"[{node_name}] {last_msg.content[:100]}...")
+                if isinstance(node_state, dict):
+                    # Accumulate sources
+                    if "sources" in node_state and node_state["sources"]:
+                        accumulated_sources.extend(node_state["sources"])
+                        logger.debug(f"[{node_name}] Collected {len(node_state['sources'])} sources")
+                    
+                    # Collect messages
+                    if "messages" in node_state and node_state["messages"]:
+                        for msg in node_state["messages"]:
+                            if hasattr(msg, "content") and msg.content:
+                                all_messages.append(msg.content)
+                                # Check if this looks like synthesis output (JSON with topic_summary)
+                                if '"topic_summary"' in msg.content:
+                                    synthesis_content = msg.content
+                                    logger.info(f"[{node_name}] Got synthesis response")
+                                else:
+                                    logger.debug(f"[{node_name}] {msg.content[:100]}...")
         
         # Extract final response
-        research_output = self._parse_final_output(final_state, query, category)
+        research_output = self._parse_final_output(
+            synthesis_content, accumulated_sources, all_messages, query, category
+        )
         
         # Save research data
         research_output.research_data_path = await self._save_research_data(
@@ -654,41 +703,49 @@ Important: Respond ONLY with valid JSON, no additional text."""
     
     def _parse_final_output(
         self,
-        final_state: Dict,
+        synthesis_content: str,
+        accumulated_sources: List[Dict],
+        all_messages: List[str],
         query: str,
         category: TopicCategory,
     ) -> ResearchOutput:
         """Parse the final state into ResearchOutput"""
         
-        synthesis_content = ""
-        all_sources = []
-        
-        for node_name, node_state in final_state.items():
-            if "messages" in node_state:
-                for msg in node_state["messages"]:
-                    if hasattr(msg, "content") and msg.content:
-                        content = msg.content
-                        if "{" in content and "}" in content:
-                            synthesis_content = content
-            
-            if "sources" in node_state:
-                all_sources.extend(node_state["sources"])
+        logger.info(f"Parsing output: synthesis={len(synthesis_content)} chars, sources={len(accumulated_sources)}")
         
         # Parse JSON from synthesis
+        data = {}
         try:
-            json_start = synthesis_content.find("{")
-            json_end = synthesis_content.rfind("}") + 1
-            if json_start >= 0 and json_end > json_start:
-                json_str = synthesis_content[json_start:json_end]
-                data = json.loads(json_str)
-            else:
-                data = {}
-        except json.JSONDecodeError:
-            logger.warning("Could not parse synthesis JSON, using fallback")
+            if synthesis_content:
+                json_start = synthesis_content.find("{")
+                json_end = synthesis_content.rfind("}") + 1
+                if json_start >= 0 and json_end > json_start:
+                    json_str = synthesis_content[json_start:json_end]
+                    data = json.loads(json_str)
+                    logger.info(f"Successfully parsed synthesis JSON with keys: {list(data.keys())}")
+        except json.JSONDecodeError as e:
+            logger.warning(f"Could not parse synthesis JSON: {e}")
+        
+        # Fallback: if no synthesis, create summary from collected research
+        if not data.get("topic_summary"):
+            logger.warning("No synthesis content, creating fallback from research data")
+            # Combine message content for a basic summary
+            combined_research = "\n".join([m for m in all_messages if len(m) > 50][:5])
             data = {
-                "topic_summary": synthesis_content or f"Research on: {query}",
-                "key_concepts": {},
+                "topic_summary": f"Research on: {query}\n\n{combined_research[:2000] if combined_research else 'Research data collected.'}",
+                "key_concepts": {"research_query": query},
             }
+        
+        # Deduplicate sources
+        unique_sources = []
+        seen_urls = set()
+        for source in accumulated_sources:
+            url = source.get("url", "")
+            if url and url not in seen_urls:
+                seen_urls.add(url)
+                unique_sources.append(source)
+            elif not url:
+                unique_sources.append(source)
         
         output = ResearchOutput(
             topic_summary=data.get("topic_summary", ""),
@@ -696,10 +753,12 @@ Important: Respond ONLY with valid JSON, no additional text."""
             mathematical_foundations=data.get("mathematical_foundations"),
             historical_context=data.get("historical_context"),
             implementation_examples=data.get("implementation_examples"),
-            sources=all_sources,
+            sources=unique_sources,
         )
         
         output.completeness_score = self._calculate_completeness(output, category)
+        
+        logger.info(f"Research output: summary={len(output.topic_summary)} chars, concepts={len(output.key_concepts)}, sources={len(output.sources)}")
         
         return output
     
@@ -708,11 +767,11 @@ Important: Respond ONLY with valid JSON, no additional text."""
         research: ResearchOutput,
         category: TopicCategory,
     ) -> float:
-        """Calculate research completeness score"""
+        """Calculate research completeness score based on category"""
         score = 0.0
         max_score = 0.0
         
-        # Base requirements
+        # Base requirements for all categories
         max_score += 3.0
         if research.topic_summary and len(research.topic_summary) > 100:
             score += 1.0
@@ -723,8 +782,9 @@ Important: Respond ONLY with valid JSON, no additional text."""
         elif len(research.sources) >= 3:
             score += 0.5
         
-        # Category-specific
+        # Category-specific requirements
         if category == TopicCategory.CORE_AI:
+            # Core AI needs math, history, and examples
             max_score += 3.0
             if research.mathematical_foundations and len(research.mathematical_foundations) > 50:
                 score += 1.0
@@ -732,14 +792,166 @@ Important: Respond ONLY with valid JSON, no additional text."""
                 score += 1.0
             if research.implementation_examples and len(research.implementation_examples) > 50:
                 score += 1.0
-        else:
+        elif category == TopicCategory.PRACTICAL_IMPLEMENTATION:
+            # Practical AI needs code examples
             max_score += 2.0
             if research.implementation_examples and len(research.implementation_examples) > 100:
                 score += 1.5
             if len(research.sources) >= 3:
                 score += 0.5
+        elif category in [TopicCategory.SOFTWARE_DEVELOPMENT, TopicCategory.WEB_DEVELOPMENT]:
+            # Software dev needs code and best practices
+            max_score += 2.0
+            if research.implementation_examples and len(research.implementation_examples) > 100:
+                score += 1.0
+            if research.key_concepts and len(research.key_concepts) >= 3:
+                score += 1.0
+        elif category == TopicCategory.DEVOPS:
+            # DevOps needs practical examples and tools
+            max_score += 2.0
+            if research.implementation_examples and len(research.implementation_examples) > 50:
+                score += 1.0
+            if len(research.sources) >= 3:
+                score += 1.0
+        else:
+            # General tech - flexible requirements
+            max_score += 1.5
+            if research.implementation_examples or research.historical_context:
+                score += 1.0
+            if len(research.sources) >= 2:
+                score += 0.5
         
         return min(score / max_score, 1.0)
+    
+    def _extract_sources_from_result(
+        self,
+        tool_name: str,
+        tool_args: Dict[str, Any],
+        result: Any,
+    ) -> List[Dict[str, Any]]:
+        """Extract source information from tool results"""
+        sources = []
+        query = tool_args.get("query", "") if isinstance(tool_args, dict) else str(tool_args)
+        
+        try:
+            # Handle different tool result formats
+            if tool_name == "tavily_search":
+                # Tavily returns list of results
+                if isinstance(result, list):
+                    for item in result[:5]:  # Top 5 results
+                        if isinstance(item, dict):
+                            sources.append({
+                                "type": "web",
+                                "title": item.get("title", "Web Article"),
+                                "url": item.get("url", ""),
+                                "tool": tool_name,
+                                "query": query,
+                            })
+                        elif isinstance(item, str):
+                            sources.append({
+                                "type": "web",
+                                "title": f"Result for: {query[:50]}",
+                                "url": "",
+                                "tool": tool_name,
+                                "query": query,
+                            })
+                            break
+                elif isinstance(result, str):
+                    sources.append({
+                        "type": "web",
+                        "title": f"Search: {query[:50]}",
+                        "url": "",
+                        "tool": tool_name,
+                        "query": query,
+                    })
+                    
+            elif tool_name == "arxiv_search":
+                # ArXiv returns formatted string or list
+                result_str = str(result)
+                if "Title:" in result_str:
+                    # Parse arxiv result format
+                    lines = result_str.split("\n")
+                    current_source = {"type": "paper", "tool": tool_name}
+                    for line in lines:
+                        if line.startswith("Title:"):
+                            current_source["title"] = line.replace("Title:", "").strip()
+                        elif line.startswith("Authors:"):
+                            # Parse authors as a list (split by comma)
+                            authors_str = line.replace("Authors:", "").strip()
+                            current_source["authors"] = [a.strip() for a in authors_str.split(",") if a.strip()]
+                        elif line.startswith("Published:"):
+                            current_source["published"] = line.replace("Published:", "").strip()
+                        elif line.startswith("Summary:"):
+                            if "title" in current_source:
+                                sources.append(current_source.copy())
+                                current_source = {"type": "paper", "tool": tool_name}
+                    if "title" in current_source:
+                        sources.append(current_source)
+                else:
+                    sources.append({
+                        "type": "paper",
+                        "title": f"ArXiv: {query[:50]}",
+                        "tool": tool_name,
+                        "query": query,
+                    })
+                    
+            elif tool_name == "wikipedia_search":
+                # Wikipedia returns text content
+                sources.append({
+                    "type": "encyclopedia",
+                    "title": f"Wikipedia: {query}",
+                    "url": f"https://en.wikipedia.org/wiki/{query.replace(' ', '_')}",
+                    "tool": tool_name,
+                    "query": query,
+                })
+                
+            elif tool_name == "github_search":
+                # GitHub search returns list or string
+                if isinstance(result, list):
+                    for item in result[:3]:
+                        if isinstance(item, dict):
+                            sources.append({
+                                "type": "github",
+                                "title": item.get("name", item.get("full_name", "GitHub Repo")),
+                                "url": item.get("html_url", item.get("url", "")),
+                                "tool": tool_name,
+                            })
+                else:
+                    sources.append({
+                        "type": "github",
+                        "title": f"GitHub: {query[:50]}",
+                        "tool": tool_name,
+                        "query": query,
+                    })
+                    
+            elif tool_name in ["web_search", "scrape_webpage"]:
+                url = tool_args.get("url", "") if isinstance(tool_args, dict) else ""
+                sources.append({
+                    "type": "web",
+                    "title": f"Web: {query[:50] or url[:50]}",
+                    "url": url or "",
+                    "tool": tool_name,
+                    "query": query,
+                })
+            else:
+                # Generic source
+                sources.append({
+                    "type": "web",
+                    "title": f"{tool_name}: {query[:50]}",
+                    "tool": tool_name,
+                    "query": query,
+                })
+                
+        except Exception as e:
+            logger.warning(f"Error extracting sources from {tool_name}: {e}")
+            sources.append({
+                "type": "web",
+                "title": f"{tool_name}: {query[:50]}",
+                "tool": tool_name,
+                "query": query,
+            })
+        
+        return sources
     
     async def _save_research_data(
         self,

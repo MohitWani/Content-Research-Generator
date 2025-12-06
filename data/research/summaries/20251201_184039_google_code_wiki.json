@@ -1,0 +1,20 @@
+{
+  "query": "google code wiki",
+  "agent_type": "react_langchain",
+  "tools_used": [
+    "tavily_search",
+    "arxiv_search",
+    "wikipedia_search",
+    "scrape_webpage",
+    "github_search",
+    "web_search"
+  ],
+  "topic_summary": "",
+  "key_concepts": {},
+  "mathematical_foundations": null,
+  "historical_context": null,
+  "implementation_examples": null,
+  "sources": [],
+  "completeness_score": 0.0,
+  "created_at": "2025-12-01T18:40:39.882240"
+}

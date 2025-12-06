@@ -15,8 +15,14 @@ from src.common.database import Base
 
 class TopicCategory(str, enum.Enum):
     """Topic categorization for research queries"""
+    # AI Topics
     CORE_AI = "core_ai"
     PRACTICAL_IMPLEMENTATION = "practical_implementation"
+    # Software Development Topics
+    SOFTWARE_DEVELOPMENT = "software_development"
+    WEB_DEVELOPMENT = "web_development"
+    DEVOPS = "devops"
+    GENERAL_TECH = "general_tech"
 
 
 class ResearchQuery(Base):
@@ -28,8 +34,8 @@ class ResearchQuery(Base):
     
     id: Mapped[int] = mapped_column(primary_key=True)
     query_text: Mapped[str] = mapped_column(Text, nullable=False)
-    topic_category: Mapped[Optional[TopicCategory]] = mapped_column(
-        PG_ENUM('core_ai', 'practical_implementation', name='topiccategory', create_type=False),
+    topic_category: Mapped[Optional[str]] = mapped_column(
+        String(50),
         nullable=True
     )
     target_audience: Mapped[Optional[str]] = mapped_column(

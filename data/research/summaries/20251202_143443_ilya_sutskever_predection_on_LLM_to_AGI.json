@@ -1,0 +1,285 @@
+{
+  "query": "ilya sutskever predection on LLM to AGI",
+  "agent_type": "react_langchain",
+  "tools_used": [
+    "tavily_search",
+    "arxiv_search",
+    "wikipedia_search",
+    "scrape_webpage",
+    "github_search",
+    "web_search"
+  ],
+  "topic_summary": "Ilya Sutskever, former Chief Scientist of OpenAI and co-founder of Safe Superintelligence Inc. (SSI), has articulated a paradigm-shifting prediction about the path from Large Language Models (LLMs) to Artificial General Intelligence (AGI). His core thesis challenges the prevailing 'scaling hypothesis' that dominated AI development from 2020-2025, declaring that the 'Age of Scaling' has ended and we are entering a new 'Age of Research.' Sutskever predicts AGI\u2014defined not as an all-knowing system but as a 'superintelligent learner' capable of rapidly acquiring any skill\u2014will emerge within 5-20 years, but through algorithmic breakthroughs rather than simply scaling compute and data. His prediction is grounded in identifying a critical flaw in current LLMs: 'jagged generalization,' where models excel at complex benchmarks yet fail at simple practical tasks, showing minimal economic impact despite impressive eval scores. This phenomenon suggests fundamental limitations in how LLMs generalize knowledge. Sutskever proposes that the path forward requires three key innovations: (1) Continual Learning\u2014systems that learn after deployment rather than relying solely on pre-training, (2) Value Functions\u2014internal reward mechanisms analogous to human emotions that guide efficient learning, and (3) Improved Generalization\u2014solving why models 'generalize dramatically worse than people.' His company SSI, founded in June 2024 with $1 billion in funding, embodies a 'straight-shot' approach to superintelligence, prioritizing safety research over commercial product cycles. Unlike competitors pursuing iterative releases, SSI aims to solve core technical and alignment problems first, operating as a 'single-mission company' insulated from market pressures. Sutskever's framework divides AI history into three eras: the first Age of Research (2012-2020) discovered transformers and attention mechanisms; the Age of Scaling (2020-2025) achieved progress through brute-force increases in model size and data; and the returning Age of Research (2026+) will require algorithmic innovation as scaling hits diminishing returns. He explicitly states that another 100x scaling would improve models but not fundamentally transform capabilities. At NeurIPS 2024, Sutskever outlined a trajectory to superintelligence progressing through four stages: agentic behavior, reasoning (which will be 'incredibly unpredictable'), understanding, and ultimately self-awareness. He emphasizes that current approaches like test-time compute (exemplified by OpenAI's o1 model) represent important directions, where models 'think' during inference rather than relying purely on pre-training knowledge. His safety philosophy treats AI alignment like 'keeping a nuclear reactor safe during an earthquake'\u2014emphasizing that capabilities and safety must advance in tandem, with safety always ahead. He envisions a multi-AI ecosystem where competition and diversity provide natural safety features, and proposes 'capability capping' to limit the raw power of the strongest systems. Critically, Sutskever expresses genuine confusion about the gap between benchmark performance and economic impact, attributing it potentially to RL training making models 'too single-minded' or poor data curation in training environments. His prediction has drawn both support and criticism: supporters view it as a necessary correction to over-reliance on scaling, while critics note his timeline expanded significantly after leaving OpenAI's infrastructure, suggesting the 5-20 year range reflects uncertainty about achieving breakthroughs without massive resources. For practitioners, Sutskever's vision implies that competitive advantage will come from algorithmic innovation, better generalization techniques, and continual learning architectures rather than simply having more compute. His work represents a fundamental reframing of the AGI problem from 'build a bigger model' to 'build a better learner'\u2014one that can adapt, generalize robustly, and continue learning from deployment, ultimately becoming superintelligent through knowledge accumulation across diverse tasks rather than through a single massive training run.",
+  "key_concepts": {
+    "Age of Scaling vs Age of Research": "Sutskever divides AI development into distinct eras. The Age of Scaling (2020-2025) achieved progress by increasing model parameters, training data volume, and compute resources\u2014the 'just add more' approach. This era is now ending due to diminishing returns and finite pre-training data. The Age of Research (2026+) will require algorithmic breakthroughs, novel architectures, and new training paradigms. This shift means competitive advantage moves from who has the most GPUs to who has the best ideas.",
+    "Jagged Generalization": "A critical failure mode in current LLMs where models perform excellently on standardized benchmarks and complex reasoning tasks but fail unpredictably on simple practical applications. Example: a model might ace graduate-level exams but get stuck in an infinite loop alternating between two bugs in basic code. This 'jaggedness' reveals that models haven't learned robust generalizable reasoning but rather statistical patterns that work well in-distribution but fail out-of-distribution. It explains the paradox of impressive eval scores with minimal economic impact.",
+    "Continual Learning Paradigm": "The core technical shift Sutskever advocates. Rather than viewing AGI as a static, pre-trained system that 'knows everything,' he proposes systems that continue learning after deployment. The vision: deploy a 'superintelligent 15-year-old' that can rapidly learn any job, with multiple instances specializing across the economy, then merge their learned knowledge. This mirrors human learning\u2014we aren't born with all knowledge but have strong learning capabilities. Continual learning requires fundamentally different architectures that can acquire new knowledge without catastrophic forgetting while maintaining safety constraints.",
+    "Value Functions": "Internal reward mechanisms analogous to human emotions that guide learning efficiency. Rather than relying purely on external rewards, value functions provide intrinsic motivation, helping systems prioritize what to learn and how to explore. Sutskever argues these are essential for sample-efficient learning that approaches human-level generalization. Value functions help solve the credit assignment problem\u2014determining which actions led to which outcomes\u2014and enable more robust learning in complex, sparse-reward environments.",
+    "Test-Time Compute": "A paradigm shift from scaling model size to scaling inference-time computation. Instead of making models larger during training, allocate more compute during inference for reasoning, verification, and multi-step problem-solving. OpenAI's o1 model exemplifies this: '20 seconds of thinking time' achieves what would require 100,000x model scale increase. This approach enables models to 'think through' problems, verify reasoning steps, and explore solution spaces rather than relying on cached pattern matching from training.",
+    "Straight-Shotting Superintelligence": "SSI's strategic approach of aiming directly for safe superintelligence rather than iterating through commercial products. Unlike competitors releasing incremental versions (GPT-4, GPT-5, etc.), SSI focuses on solving core technical problems\u2014generalization, continual learning, alignment\u2014before deployment. This 'research-first' model insulates the team from commercial pressures that might compromise safety for market timing. The bet: solving fundamental problems once yields better outcomes than incremental product cycles.",
+    "Superintelligent Learner": "Sutskever's reframing of AGI. Rather than a system that knows every job, the goal is a system that can learn any job as efficiently as (or better than) humans. This learner would have strong foundational capabilities but acquire domain-specific knowledge through deployment and experience. Multiple instances would specialize in different domains, then merge knowledge, creating a distributed path to superintelligence rather than a single monolithic training run.",
+    "Capability Capping": "A proposed safety mechanism involving limiting the raw computational power or capabilities of the most advanced systems, even if technically feasible to make them stronger. While Sutskever admits the implementation mechanism is unknown, the principle is to constrain potentially dangerous capabilities while researching alignment. This contrasts with 'race to the top' dynamics where labs maximize capabilities to compete.",
+    "Multi-Agent Safety": "The concept that multiple AI systems coexisting, specializing, and competing may provide natural safety features. Rather than a single superintelligent system that could become uncontrollable, an ecosystem of diverse AIs might check and balance each other. This parallels how human institutions use separation of powers and competing interests to prevent concentration of power."
+  },
+  "mathematical_foundations": "While Sutskever's predictions are primarily conceptual rather than mathematical, several formal frameworks underpin his technical vision. Continual learning can be formalized through catastrophic forgetting metrics: given a model \u03b8 trained on tasks T1...Tn, the forgetting measure F(\u03b8, Ti, Tj) quantifies performance degradation on task Ti after learning task Tj. The goal is minimizing \u03a3 F while maximizing current task performance. Value functions in reinforcement learning are formalized as V(s) = E[\u03a3 \u03b3^t r(t) | s0=s], representing expected cumulative discounted reward from state s. Sutskever's emphasis suggests learning intrinsic value functions V_intrinsic that guide exploration independent of external rewards. Test-time compute scaling can be modeled as a compute-accuracy tradeoff: accuracy A(c) as a function of inference compute c, with the hypothesis that \u2202A/\u2202c remains significant even when \u2202A/\u2202\u03b8 (accuracy improvement from parameter scaling) plateaus. Generalization bounds from statistical learning theory are relevant: the generalization gap |L_train - L_test| where L represents loss. Current LLMs show small gaps on benchmark distributions but large gaps on practical task distributions, suggesting the jagged generalization problem relates to distribution shift: L_test(D_benchmark) \u2248 L_train but L_test(D_real) >> L_train. The continual learning objective can be expressed as: min_\u03b8 \u03a3_t L_t(\u03b8) + \u03bb\u03a9(\u03b8, \u03b8_prev) where \u03a9 is a regularization term preventing catastrophic forgetting (e.g., elastic weight consolidation). For multi-agent systems, game-theoretic frameworks apply: Nash equilibria where no agent can improve by unilateral deviation, potentially providing stability properties for multi-AI safety.",
+  "historical_context": "Ilya Sutskever's journey to this prediction spans the entire modern deep learning era. In 2012, as a PhD student under Geoffrey Hinton, he co-created AlexNet with Alex Krizhevsky, which won ImageNet and catalyzed the deep learning revolution\u2014this marks the beginning of his 'first Age of Research.' He co-founded OpenAI in 2015 alongside Sam Altman, Elon Musk, and others, with the explicit mission of developing safe AGI. At OpenAI, Sutskever was chief architect of the GPT series: GPT-1 (2018) demonstrated transfer learning from unsupervised pre-training; GPT-2 (2019) showed scaling improved capabilities; GPT-3 (2020) with 175B parameters revealed emergent abilities and launched the 'Age of Scaling.' He co-led the team that created GPT-4 (2023), which achieved near-human performance on many benchmarks. Simultaneously, he co-led OpenAI's Superalignment team, focused on aligning superintelligent systems. In November 2023, Sutskever was central to the board's decision to remove Sam Altman as CEO, reportedly over concerns about AI safety and Altman's approach to commercialization. Altman was reinstated within a week after employee and investor pressure, and Sutskever stepped down from the board. This episode revealed deep tensions between safety-first and product-first approaches. In May 2024, Sutskever left OpenAI entirely. In June 2024, he founded Safe Superintelligence Inc. with Daniel Gross (former head of Apple AI) and Daniel Levy (AI researcher), raising $1 billion by September 2024. His November 2024 Dwarkesh Patel interview and December 2024 NeurIPS talk crystallized his current thesis: scaling is over, research is back. This trajectory\u2014from pioneering the techniques that enabled scaling, to leading the scaling era at OpenAI, to declaring scaling's end\u2014gives his prediction unique authority and irony. Key intellectual influences include: Geoffrey Hinton (neural network foundations), Yoshua Bengio (deep learning theory), Rich Sutton (reinforcement learning, the 'bitter lesson' about compute), and the broader community's work on transformers (Vaswani et al., 2017). His prediction represents a synthesis of observing scaling's successes and limitations firsthand at the world's leading AI lab.",
+  "implementation_examples": "While SSI's specific implementations remain proprietary, practitioners can explore Sutskever's concepts through several concrete approaches. For continual learning, implement elastic weight consolidation (EWC): after training on task T1, compute Fisher information matrix F_i = E[(\u2202log p(y|x,\u03b8)/\u2202\u03b8_i)\u00b2] for each parameter, then when training on T2, add regularization loss: L_EWC = L_T2 + (\u03bb/2)\u03a3 F_i(\u03b8_i - \u03b8*_i)\u00b2 where \u03b8* are T1's optimal parameters. This preserves important T1 knowledge while learning T2. For value functions, implement curiosity-driven learning: train a forward model predicting next state s_t+1 from (s_t, a_t), use prediction error as intrinsic reward: r_intrinsic = ||f(s_t, a_t) - s_t+1||\u00b2. This encourages exploring novel states. For test-time compute, implement chain-of-thought prompting with verification: generate multiple reasoning paths, score each path's consistency, select highest-scoring solution. Advanced: implement tree search at inference with learned value functions evaluating intermediate reasoning states. For addressing jagged generalization, implement adversarial training with out-of-distribution detection: augment training with synthetically difficult examples that expose failure modes, train confidence estimators to detect when model is out-of-distribution. For multi-agent approaches, implement debate: train two models to argue for different answers, with a judge selecting the winner; this incentivizes finding flaws in reasoning. Example pseudocode for continual learning with EWC: class EWCLearner: def __init__(self, model, lambda_ewc=0.4): self.model = model; self.lambda_ewc = lambda_ewc; self.fisher = {}; self.optimal_params = {}; def compute_fisher(self, dataloader): # After training task, compute Fisher information; self.model.eval(); fisher = {n: torch.zeros_like(p) for n, p in self.model.named_parameters()}; for x, y in dataloader: self.model.zero_grad(); output = self.model(x); loss = F.cross_entropy(output, y); loss.backward(); for n, p in self.model.named_parameters(): fisher[n] += p.grad.data ** 2 / len(dataloader); self.fisher = fisher; self.optimal_params = {n: p.clone() for n, p in self.model.named_parameters()}; def ewc_loss(self): loss = 0; for n, p in self.model.named_parameters(): if n in self.fisher: loss += (self.fisher[n] * (p - self.optimal_params[n]) ** 2).sum(); return self.lambda_ewc / 2 * loss; def train_new_task(self, dataloader): for x, y in dataloader: output = self.model(x); task_loss = F.cross_entropy(output, y); total_loss = task_loss + self.ewc_loss(); total_loss.backward(); optimizer.step(). For value-guided exploration: class CuriosityModule: def __init__(self, state_dim, action_dim): self.forward_model = MLP(state_dim + action_dim, state_dim); def intrinsic_reward(self, state, action, next_state): predicted_next = self.forward_model(torch.cat([state, action])); return torch.norm(predicted_next - next_state). These implementations provide starting points for exploring Sutskever's technical vision, though production systems require significantly more sophistication in architecture, scaling, and safety constraints.",
+  "sources": [
+    {
+      "type": "web",
+      "title": "When Will AGI/Singularity Happen? 8,590 Predictions Analyzed",
+      "url": "https://research.aimultiple.com/artificial-general-intelligence-singularity-timing/",
+      "tool": "tavily_search",
+      "query": "Ilya Sutskever prediction LLM to AGI timeline"
+    },
+    {
+      "type": "web",
+      "title": "No One Is Ready For This \u2014 Ilya Sutskever on Superintelligence",
+      "url": "https://www.youtube.com/watch?v=h9gynRa0jB4",
+      "tool": "tavily_search",
+      "query": "Ilya Sutskever prediction LLM to AGI timeline"
+    },
+    {
+      "type": "web",
+      "title": "\u2022 Sutskever claims AI's \"age of scaling\" (2020-2025) has ended ...",
+      "url": "https://www.facebook.com/groups/595424764221375/posts/2345052672591900/",
+      "tool": "tavily_search",
+      "query": "Ilya Sutskever prediction LLM to AGI timeline"
+    },
+    {
+      "type": "paper",
+      "tool": "arxiv_search",
+      "published": "2021-10-05",
+      "title": "The Artificial Scientist: Logicist, Emergentist, and Universalist Approaches to Artificial General Intelligence",
+      "authors": [
+        "Michael Timothy Bennett",
+        "Yoshihiro Maruyama"
+      ]
+    },
+    {
+      "type": "paper",
+      "tool": "arxiv_search",
+      "published": "2021-10-05",
+      "title": "Compression, The Fermi Paradox and Artificial Super-Intelligence",
+      "authors": [
+        "Michael Timothy Bennett"
+      ]
+    },
+    {
+      "type": "paper",
+      "tool": "arxiv_search",
+      "published": "2024-03-13",
+      "title": "AGI: Artificial General Intelligence for Education",
+      "authors": [
+        "Ehsan Latif",
+        "Gengchen Mai",
+        "Matthew Nyaaba",
+        "Xuansheng Wu",
+        "Ninghao Liu",
+        "Guoyu Lu",
+        "Sheng Li",
+        "Tianming Liu",
+        "Xiaoming Zhai"
+      ]
+    },
+    {
+      "type": "encyclopedia",
+      "title": "Wikipedia: Ilya Sutskever OpenAI",
+      "url": "https://en.wikipedia.org/wiki/Ilya_Sutskever_OpenAI",
+      "tool": "wikipedia_search",
+      "query": "Ilya Sutskever OpenAI"
+    },
+    {
+      "type": "paper",
+      "tool": "arxiv_search",
+      "published": "2021-10-05",
+      "title": "The Artificial Scientist: Logicist, Emergentist, and Universalist Approaches to Artificial General Intelligence",
+      "authors": [
+        "Michael Timothy Bennett",
+        "Yoshihiro Maruyama"
+      ]
+    },
+    {
+      "type": "paper",
+      "tool": "arxiv_search",
+      "published": "2021-10-05",
+      "title": "Compression, The Fermi Paradox and Artificial Super-Intelligence",
+      "authors": [
+        "Michael Timothy Bennett"
+      ]
+    },
+    {
+      "type": "paper",
+      "tool": "arxiv_search",
+      "published": "2024-03-13",
+      "title": "AGI: Artificial General Intelligence for Education",
+      "authors": [
+        "Ehsan Latif",
+        "Gengchen Mai",
+        "Matthew Nyaaba",
+        "Xuansheng Wu",
+        "Ninghao Liu",
+        "Guoyu Lu",
+        "Sheng Li",
+        "Tianming Liu",
+        "Xiaoming Zhai"
+      ]
+    },
+    {
+      "type": "web",
+      "title": "Ilya Sutskever's 1.5-Hour Conversation After Leaving OpenAI: AGI ...",
+      "url": "https://eu.36kr.com/en/p/3570122305223553",
+      "tool": "tavily_search",
+      "query": "Ilya Sutskever TED Talk AGI 5-10 years prediction 2024"
+    },
+    {
+      "type": "web",
+      "title": "AGI is not possible even in 10 years | by MD ZAID ANWAR - Medium",
+      "url": "https://medium.com/@anwarzaid76/agi-is-not-possible-even-in-10-years-013a1aec0d9c",
+      "tool": "tavily_search",
+      "query": "Ilya Sutskever TED Talk AGI 5-10 years prediction 2024"
+    },
+    {
+      "type": "web",
+      "title": "Unpacking Dwarkesh's Ilya Sutskever Interview on AGI, ASI ...",
+      "url": "https://www.theneuron.ai/explainer-articles/unpacking-dwarkeshs-ilya-sutskever-interview-on-agi-asi-and-how-to-build-both-safely",
+      "tool": "tavily_search",
+      "query": "\"Ilya Sutskever\" \"scaling is not enough\" AGI continual learning"
+    },
+    {
+      "type": "web",
+      "title": "Ilya Sutskever \u2013 We're moving from the age of scaling to the ...",
+      "url": "https://www.dwarkesh.com/p/ilya-sutskever-2",
+      "tool": "tavily_search",
+      "query": "\"Ilya Sutskever\" \"scaling is not enough\" AGI continual learning"
+    },
+    {
+      "type": "web",
+      "title": "The Man Who Built GPT Says More GPUs Won't Get Us to AGI",
+      "url": "https://www.smithstephen.com/p/the-man-who-built-gpt-says-more-gpus",
+      "tool": "tavily_search",
+      "query": "\"Ilya Sutskever\" \"scaling is not enough\" AGI continual learning"
+    },
+    {
+      "type": "web",
+      "title": "Ilya Sutskever: The AI 'Age of Scaling' Has Ended",
+      "url": "https://langcopilot.com/posts/2025-11-26-ilya-sutskever-the-ai-age-scaling",
+      "tool": "tavily_search",
+      "query": "Safe Superintelligence SSI Ilya Sutskever approach beyond LLMs"
+    },
+    {
+      "type": "web",
+      "title": "From LLMs to Superintelligence: Ilya Sutskever's Vision ... - LinkedIn",
+      "url": "https://www.linkedin.com/pulse/from-llms-superintelligence-ilya-sutskevers-vision-future-minevich-dzwje",
+      "tool": "tavily_search",
+      "query": "Safe Superintelligence SSI Ilya Sutskever approach beyond LLMs"
+    },
+    {
+      "type": "web",
+      "title": "Ilya Sutskever, Yann LeCun and the End of \u201cJust Add GPUs\u201d",
+      "url": "https://www.abzglobal.net/web-development-blog/ilya-sutskever-yann-lecun-and-the-end-of-just-add-gpus",
+      "tool": "tavily_search",
+      "query": "Safe Superintelligence SSI Ilya Sutskever approach beyond LLMs"
+    },
+    {
+      "type": "web",
+      "title": "Never bet against AGI - but let's\u2026 | Artur Kiulian - LinkedIn",
+      "url": "https://www.linkedin.com/posts/artur-kiulian_never-bet-against-agi-or-should-you-activity-7273616720236359680-_afh",
+      "tool": "tavily_search",
+      "query": "\"Ilya Sutskever\" NeurIPS 2024 reasoning self-awareness AGI"
+    },
+    {
+      "type": "web",
+      "title": "What Ilya Saw",
+      "url": "https://www.latent.space/p/what-ilya-saw",
+      "tool": "tavily_search",
+      "query": "\"Ilya Sutskever\" NeurIPS 2024 reasoning self-awareness AGI"
+    },
+    {
+      "type": "web",
+      "title": "Ilya's full talk at neurips 2024 \"pre-training as we know it will end\"",
+      "url": "https://www.reddit.com/r/singularity/comments/1hdrjvq/ilyas_full_talk_at_neurips_2024_pretraining_as_we/",
+      "tool": "tavily_search",
+      "query": "\"Ilya Sutskever\" NeurIPS 2024 reasoning self-awareness AGI"
+    },
+    {
+      "type": "web",
+      "title": "Web: Ilya Sutskever value functions AGI learning effici",
+      "url": "",
+      "tool": "web_search",
+      "query": "Ilya Sutskever value functions AGI learning efficiency"
+    },
+    {
+      "type": "web",
+      "title": "Highlights from Ilya Sutskever's November 2025 interview with ...",
+      "url": "https://forum.effectivealtruism.org/posts/iuKa2iPg7vD9BdZna/highlights-from-ilya-sutskever-s-november-2025-interview",
+      "tool": "tavily_search",
+      "query": "Ilya Sutskever generalization problem LLMs jagged capabilities"
+    },
+    {
+      "type": "web",
+      "title": "\u201cJagged Intelligence\u201d and the Challenge of Consistency in AGI",
+      "url": "https://thinkaicorp.com/jagged-intelligence-and-the-challenge-of-consistency-in-agi/",
+      "tool": "tavily_search",
+      "query": "Ilya Sutskever generalization problem LLMs jagged capabilities"
+    },
+    {
+      "type": "web",
+      "title": "Test-Time Compute in Generative AI: An AI Atlas Report",
+      "url": "https://www.emerge.haus/blog/test-time-compute-generative-ai",
+      "tool": "tavily_search",
+      "query": "\"Ilya Sutskever\" \"test time compute\" reasoning o1 OpenAI AGI"
+    },
+    {
+      "type": "web",
+      "title": "The Age of Scaling Is Over!",
+      "url": "https://www.linkedin.com/pulse/age-scaling-over-samet-ozkale-2bkcf",
+      "tool": "tavily_search",
+      "query": "\"Ilya Sutskever\" \"test time compute\" reasoning o1 OpenAI AGI"
+    },
+    {
+      "type": "web",
+      "title": "Has AI scaling hit a limit?",
+      "url": "https://foundationcapital.com/has-ai-scaling-hit-a-limit/",
+      "tool": "tavily_search",
+      "query": "\"Ilya Sutskever\" \"test time compute\" reasoning o1 OpenAI AGI"
+    },
+    {
+      "type": "web",
+      "title": "Ilya Sutskever's New Playbook for AGI - The AI Corner",
+      "url": "https://www.the-ai-corner.com/p/ilya-sutskever-safe-superintelligence-agi-2025",
+      "tool": "tavily_search",
+      "query": "\"Ilya Sutskever\" \"5 to 20 years\" AGI timeline forecast human-level learning"
+    },
+    {
+      "type": "web",
+      "title": "The Ghost in the Machine: A Critique of Ilya Sutskever's Safe ...",
+      "url": "https://medium.com/@haydarjawad/the-ghost-in-the-machine-a-critique-of-ilya-sutskevers-safe-superintelligence-manifesto-68c254c5fd18",
+      "tool": "tavily_search",
+      "query": "\"Ilya Sutskever\" \"5 to 20 years\" AGI timeline forecast human-level learning"
+    },
+    {
+      "type": "web",
+      "title": "Ilya Sutskever's Safe Superintelligence: Pioneering Holistic AI Safety",
+      "url": "https://medium.com/@alexycliu/ilya-sutskevers-safe-superintelligence-pioneering-holistic-ai-safety-6678dffd266b",
+      "tool": "tavily_search",
+      "query": "Safe Superintelligence SSI Ilya Sutskever alignment safety approach 2024"
+    },
+    {
+      "type": "web",
+      "title": "Everything we know so far about Ilya Sutskever's new AI company",
+      "url": "https://daily.dev/blog/safe-superintelligence-inc-ssi-everything-we-know-so-far-about-ilya-sutskevers-new-ai-company",
+      "tool": "tavily_search",
+      "query": "Safe Superintelligence SSI Ilya Sutskever alignment safety approach 2024"
+    },
+    {
+      "type": "web",
+      "title": "OpenAI co-founder Ilya Sutskever launches startup to develop 'safe ...",
+      "url": "https://siliconangle.com/2024/06/19/openai-co-founder-ilya-sutskever-launches-startup-develop-safe-superintelligence/",
+      "tool": "tavily_search",
+      "query": "Safe Superintelligence SSI Ilya Sutskever alignment safety approach 2024"
+    }
+  ],
+  "completeness_score": 1.0,
+  "created_at": "2025-12-02T14:34:43.303951"
+}
