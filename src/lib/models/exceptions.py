@@ -266,6 +266,69 @@ class MissingAPIKeyError(ConfigurationError):
         self.code = "MISSING_API_KEY"
 
 
+# ArXiv Paper Errors
+class ArXivPaperError(AIResearchAgentError):
+    """Base exception for ArXiv paper operations"""
+    
+    def __init__(self, message: str, details: Optional[Dict[str, Any]] = None):
+        super().__init__(
+            message=message,
+            code="ARXIV_PAPER_ERROR",
+            details=details,
+        )
+
+
+class InvalidArXivIdError(ArXivPaperError):
+    """Raised when ArXiv ID format is invalid"""
+    
+    def __init__(self, arxiv_id: str):
+        self.arxiv_id = arxiv_id
+        super().__init__(
+            message=(
+                f"Invalid ArXiv ID format: '{arxiv_id}'. "
+                f"Expected format: '2508.07407' or 'arxiv:2508.07407v2'"
+            ),
+            details={"arxiv_id": arxiv_id},
+        )
+        self.code = "INVALID_ARXIV_ID"
+
+
+class PaperNotFoundError(ArXivPaperError):
+    """Raised when paper is not found on ArXiv"""
+    
+    def __init__(self, arxiv_id: str):
+        self.arxiv_id = arxiv_id
+        super().__init__(
+            message=f"Paper not found on ArXiv: {arxiv_id}",
+            details={"arxiv_id": arxiv_id},
+        )
+        self.code = "PAPER_NOT_FOUND"
+
+
+class PaperContentInsufficientError(ArXivPaperError):
+    """Raised when paper content is insufficient for research"""
+    
+    def __init__(self, message: str = "Paper content is insufficient for research", arxiv_id: Optional[str] = None):
+        super().__init__(
+            message=message,
+            details={"arxiv_id": arxiv_id} if arxiv_id else {},
+        )
+        self.code = "PAPER_CONTENT_INSUFFICIENT"
+
+
+class MultiplePapersLimitError(ArXivPaperError):
+    """Raised when too many papers are requested"""
+    
+    def __init__(self, count: int, limit: int = 5):
+        self.count = count
+        self.limit = limit
+        super().__init__(
+            message=f"Maximum {limit} papers allowed, got {count}",
+            details={"requested": count, "limit": limit},
+        )
+        self.code = "MULTIPLE_PAPERS_LIMIT"
+
+
 # Backwards compatibility aliases
 LLMRateLimitError = RateLimitExceededError
 ResearchAgentError = AIResearchAgentError

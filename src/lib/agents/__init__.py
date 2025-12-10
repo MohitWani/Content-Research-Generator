@@ -24,6 +24,12 @@ from src.lib.agents.branding_agent import (
     BrandingResult,
     get_branding_agent,
 )
+from src.lib.agents.arxiv_paper_research_agent import (
+    ArXivPaperResearchAgent,
+    PaperResearchOutput,
+    PaperMetadata,
+    get_arxiv_paper_research_agent,
+)
 
 # Alias for backward compatibility
 ResearchAgent = ReActResearchAgent
@@ -53,4 +59,9 @@ __all__ = [
     "VoiceProfile",
     "BrandingResult",
     "get_branding_agent",
+    # ArXiv Paper Research Agent
+    "ArXivPaperResearchAgent",
+    "PaperResearchOutput",
+    "PaperMetadata",
+    "get_arxiv_paper_research_agent",
 ]

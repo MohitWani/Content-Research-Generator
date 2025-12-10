@@ -11,7 +11,7 @@ from rich.table import Table
 from rich.panel import Panel
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
-from src.cli.commands import research, content, pipeline, social
+from src.cli.commands import research, content, pipeline, social, paper
 
 console = Console()
 app = typer.Typer(
@@ -22,6 +22,7 @@ app = typer.Typer(
 
 # Add subcommands
 app.add_typer(research.app, name="research", help="Research commands")
+app.add_typer(paper.app, name="paper", help="ArXiv paper research commands")
 app.add_typer(content.app, name="content", help="Content generation commands")
 app.add_typer(pipeline.app, name="pipeline", help="Pipeline execution commands")
 app.add_typer(social.app, name="social", help="Social content commands")

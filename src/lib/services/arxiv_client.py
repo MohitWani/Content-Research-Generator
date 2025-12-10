@@ -20,7 +20,7 @@ class ArXivClient:
     Searches and retrieves academic papers
     """
     
-    BASE_URL = "http://export.arxiv.org/api/query"
+    BASE_URL = "https://export.arxiv.org/api/query"
     NAMESPACES = {
         "atom": "http://www.w3.org/2005/Atom",
         "arxiv": "http://arxiv.org/schemas/atom",
@@ -40,7 +40,7 @@ class ArXivClient:
     @property
     def http_client(self) -> httpx.AsyncClient:
         if self._http_client is None:
-            self._http_client = httpx.AsyncClient(timeout=30.0)
+            self._http_client = httpx.AsyncClient(timeout=30.0, follow_redirects=True)
         return self._http_client
     
     async def search(

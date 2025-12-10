@@ -8,7 +8,7 @@ from typing import AsyncGenerator
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from src.api.routes import research, content, pipelines, social, branding
+from src.api.routes import research, content, pipelines, social, branding, paper
 from src.api.middleware import (
     ErrorHandlerMiddleware,
     RequestLoggingMiddleware,
@@ -56,6 +56,7 @@ app.add_middleware(
 
 # Include routers
 app.include_router(research.router, prefix="/api/v1/research", tags=["Research"])
+app.include_router(paper.router, prefix="/api/v1/paper", tags=["Paper Research"])
 app.include_router(content.router, prefix="/api/v1/content", tags=["Content"])
 app.include_router(pipelines.router, prefix="/api/v1/pipelines", tags=["Pipelines"])
 app.include_router(social.router, prefix="/api/v1/social", tags=["Social Content"])

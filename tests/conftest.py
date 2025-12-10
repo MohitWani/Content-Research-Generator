@@ -285,3 +285,167 @@ async def create_test_content_item(db_session, create_test_research_query):
         await db_session.refresh(content)
         return content
     return _create
+
+
+# ============= Paper Research Fixtures =============
+
+@pytest.fixture
+def sample_paper_metadata():
+    """Sample ArXiv paper metadata"""
+    return {
+        "id": "https://arxiv.org/abs/1706.03762",
+        "arxiv_id": "1706.03762",
+        "title": "Attention Is All You Need",
+        "authors": ["Ashish Vaswani", "Noam Shazeer", "Niki Parmar"],
+        "summary": "The dominant sequence transduction models are based on complex recurrent or convolutional neural networks that include an encoder and a decoder. The best performing models also connect the encoder and decoder through an attention mechanism. We propose a new simple network architecture, the Transformer, based solely on attention mechanisms, dispensing with recurrence and convolutions entirely.",
+        "published": "2017-06-12",
+        "updated": "2017-12-06",
+        "categories": ["cs.CL", "cs.LG"],
+        "pdf_url": "https://arxiv.org/pdf/1706.03762.pdf",
+        "abs_url": "https://arxiv.org/abs/1706.03762",
+    }
+
+
+@pytest.fixture
+def sample_enhanced_research_result():
+    """Sample enhanced research result for paper"""
+    return {
+        "paper_overview": "This paper introduces the Transformer architecture, a novel approach that relies entirely on attention mechanisms...",
+        "methodology_deep_dive": "The Transformer uses multi-head self-attention to process sequences. The attention mechanism computes weighted sums of value vectors...",
+        "experimental_results": "The model achieves 28.4 BLEU on WMT 2014 English-to-German translation, surpassing previous best results...",
+        "practical_implications": "The Transformer architecture has become the foundation for modern NLP systems including BERT, GPT, and T5...",
+        "limitations_future_work": "The quadratic complexity of self-attention limits the sequence length. Future work includes sparse attention mechanisms...",
+        "related_work_summary": "Prior work used RNNs (LSTM, GRU) and CNNs for sequence modeling. This work differs by using only attention...",
+        "key_concepts": {
+            "Self-Attention": "Mechanism for attending to different positions of the same sequence",
+            "Multi-Head Attention": "Running attention multiple times in parallel with different projections",
+            "Positional Encoding": "Adding position information to word embeddings",
+            "Encoder-Decoder": "Architecture pattern for sequence-to-sequence tasks",
+        },
+        "mathematical_foundations": "Attention(Q,K,V) = softmax(QK^T/sqrt(d_k))V",
+        "topic_summary": "The Transformer is a neural network architecture that uses self-attention mechanisms...",
+        "implementation_examples": "```python\nimport torch.nn as nn\nclass MultiHeadAttention(nn.Module):\n    ...\n```",
+        "completeness_score": 0.92,
+    }
+
+
+@pytest.fixture
+def known_arxiv_ids():
+    """Dictionary of known ArXiv paper IDs for testing"""
+    return {
+        "attention": "1706.03762",  # Attention Is All You Need
+        "gpt3": "2005.14165",  # Language Models are Few-Shot Learners
+        "bert": "1810.04805",  # BERT
+        "resnet": "1512.03385",  # Deep Residual Learning
+        "vit": "2010.11929",  # Vision Transformer
+    }
+
+
+@pytest_asyncio.fixture
+async def arxiv_client():
+    """Real ArXiv client for integration tests"""
+    from src.lib.services.arxiv_client import ArXivClient
+    client = ArXivClient()
+    yield client
+    await client.close()
+
+
+@pytest_asyncio.fixture
+async def paper_research_agent(llm):
+    """Paper research agent with real LLM"""
+    from src.lib.agents.arxiv_paper_research_agent import ArXivPaperResearchAgent
+    return ArXivPaperResearchAgent(llm=llm)
+
+
+@pytest_asyncio.fixture
+async def create_paper_research(db_session, create_test_research_query):
+    """Factory fixture for creating paper research records"""
+    async def _create(data: dict = None):
+        from dataclasses import dataclass
+        
+        @dataclass
+        class MockPaperResearch:
+            id: int
+            arxiv_id: str
+            status: str = "pending"
+        
+        default_data = {
+            "arxiv_id": "1706.03762",
+            "status": "pending",
+        }
+        if data:
+            default_data.update(data)
+        
+        # Create underlying research query
+        query = await create_test_research_query({
+            "query_text": f"Paper: {default_data['arxiv_id']}",
+            "status": default_data.get("status", "pending"),
+        })
+        
+        return MockPaperResearch(
+            id=query.id,
+            arxiv_id=default_data["arxiv_id"],
+            status=default_data.get("status", "pending"),
+        )
+    return _create
+
+
+@pytest_asyncio.fixture
+async def create_completed_paper_research(db_session, create_test_research_query, create_test_research_result):
+    """Factory fixture for creating completed paper research"""
+    async def _create(data: dict = None):
+        from dataclasses import dataclass
+        
+        @dataclass
+        class MockCompletedPaperResearch:
+            id: int
+            arxiv_id: str
+            status: str = "completed"
+        
+        default_data = {
+            "arxiv_id": "1706.03762",
+        }
+        if data:
+            default_data.update(data)
+        
+        # Create research query
+        query = await create_test_research_query({
+            "query_text": f"Paper: {default_data['arxiv_id']}",
+            "status": "completed",
+        })
+        
+        # Create research result
+        await create_test_research_result(
+            query_id=query.id,
+            data={
+                "topic_summary": "Paper research completed",
+                "key_concepts": {"transformer": "attention-based architecture"},
+                "completeness_score": 0.9,
+            }
+        )
+        
+        return MockCompletedPaperResearch(
+            id=query.id,
+            arxiv_id=default_data["arxiv_id"],
+            status="completed",
+        )
+    return _create
+
+
+# API client fixtures for E2E tests
+@pytest_asyncio.fixture
+async def async_client(db_session):
+    """AsyncClient for API testing with database override"""
+    from httpx import AsyncClient
+    from src.api.main import app
+    from src.common.database import get_db
+    
+    async def override_get_db():
+        yield db_session
+    
+    app.dependency_overrides[get_db] = override_get_db
+    
+    async with AsyncClient(app=app, base_url="http://test") as client:
+        yield client
+    
+    app.dependency_overrides.clear()
