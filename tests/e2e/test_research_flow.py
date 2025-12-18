@@ -16,12 +16,12 @@ class TestResearchE2EFlow:
         """Should execute complete research pipeline"""
         from src.lib.pipelines.research_pipeline import ResearchPipeline
         from src.lib.agents.topic_agent import TopicAgent
-        from src.lib.agents.react_research_agent import ResearchAgent, ResearchOutput
+        from src.lib.agents.agentic_researcher import AgenticResearcher as ResearchAgent, ResearchOutput
         from src.lib.models.schemas import TopicCategorizationResult
         
         # Mock agents
         with patch.object(TopicAgent, 'categorize_query') as mock_categorize, \
-             patch.object(ResearchAgent, 'conduct_research') as mock_research:
+             patch.object(ResearchAgent, 'research') as mock_research:
             
             mock_categorize.return_value = TopicCategorizationResult(
                 category="core_ai",
@@ -75,12 +75,12 @@ class TestResearchE2EFlow:
         """Should adapt research depth based on category"""
         from src.lib.pipelines.research_pipeline import ResearchPipeline
         from src.lib.agents.topic_agent import TopicAgent
-        from src.lib.agents.react_research_agent import ResearchAgent, ResearchOutput
+        from src.lib.agents.agentic_researcher import AgenticResearcher as ResearchAgent, ResearchOutput
         from src.lib.models.schemas import TopicCategorizationResult
         from src.lib.models.research import TopicCategory
         
         with patch.object(TopicAgent, 'categorize_query') as mock_categorize, \
-             patch.object(ResearchAgent, 'conduct_research') as mock_research:
+             patch.object(ResearchAgent, 'research') as mock_research:
             
             # Test core AI topic
             mock_categorize.return_value = TopicCategorizationResult(
@@ -120,11 +120,11 @@ class TestResearchAPIE2E:
         # For now, test the underlying logic
         from src.lib.orchestrator.workflow_manager import WorkflowManager
         from src.lib.agents.topic_agent import TopicAgent
-        from src.lib.agents.react_research_agent import ResearchAgent, ResearchOutput
+        from src.lib.agents.agentic_researcher import AgenticResearcher as ResearchAgent, ResearchOutput
         from src.lib.models.schemas import TopicCategorizationResult
         
         with patch.object(TopicAgent, 'categorize_query') as mock_cat, \
-             patch.object(ResearchAgent, 'conduct_research') as mock_res:
+             patch.object(ResearchAgent, 'research') as mock_res:
             
             mock_cat.return_value = TopicCategorizationResult(
                 category="practical_implementation",

@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from src.lib.agents.topic_agent import TopicAgent
-from src.lib.agents.react_research_agent import ReActResearchAgent, ResearchOutput
+from src.lib.agents.agentic_researcher import AgenticResearcher, ResearchOutput
 from src.lib.agents.blog_writer_agent import BlogWriterAgent, BlogOutput
 from src.lib.models.research import (
     ResearchQuery,
@@ -53,13 +53,13 @@ class BlogWorkflowResult:
 class WorkflowManager:
     """
     Orchestrates multi-agent workflows for research and content generation
-    Uses LangGraph ReAct agent with LangChain tools for research
+    Uses AgenticResearcher with LangGraph's create_react_agent
     """
     
     def __init__(
         self,
         topic_agent: Optional[TopicAgent] = None,
-        research_agent: Optional[ReActResearchAgent] = None,
+        research_agent: Optional[AgenticResearcher] = None,
         blog_writer_agent: Optional[BlogWriterAgent] = None,
         db_session: Optional[AsyncSession] = None,
         llm: Optional[Any] = None,
@@ -69,17 +69,17 @@ class WorkflowManager:
         
         Args:
             topic_agent: Agent for topic categorization
-            research_agent: ReAct research agent with LangChain tools
+            research_agent: AgenticResearcher with LangGraph
             blog_writer_agent: Agent for blog generation
             db_session: Database session for persistence
             llm: Optional LLM instance (used to create default agents)
         """
         self.topic_agent = topic_agent or TopicAgent(llm=llm)
-        self.research_agent = research_agent or ReActResearchAgent(llm=llm, max_iterations=10)
+        self.research_agent = research_agent or AgenticResearcher(llm=llm, max_iterations=5)
         self.blog_writer_agent = blog_writer_agent or BlogWriterAgent(llm=llm)
         self.db_session = db_session
         
-        logger.info("Initialized WorkflowManager with ReAct Research Agent")
+        logger.info("Initialized WorkflowManager with AgenticResearcher")
     
     async def execute_research_workflow(
         self,
@@ -125,7 +125,7 @@ class WorkflowManager:
             )
             
             # Step 4: Conduct research
-            research_output = await self.research_agent.conduct_research(
+            research_output = await self.research_agent.research(
                 query=query,
                 category=topic_category,
                 target_audience=target_audience,
@@ -360,7 +360,7 @@ class WorkflowManager:
             topic_summary=research_output.topic_summary,
             key_concepts=research_output.key_concepts,
             mathematical_foundations=research_output.mathematical_foundations,
-            historical_context=research_output.historical_context,
+            historical_context=research_output.source_descriptions,
             implementation_examples=research_output.implementation_examples,
             sources=research_output.sources,
             completeness_score=research_output.completeness_score,

@@ -58,7 +58,7 @@ def run_full_pipeline(
                     "topic_summary": research_result.research_output.topic_summary,
                     "key_concepts": research_result.research_output.key_concepts,
                     "mathematical_foundations": research_result.research_output.mathematical_foundations,
-                    "historical_context": research_result.research_output.historical_context,
+                    "historical_context": research_result.research_output.source_descriptions,
                     "implementation_examples": research_result.research_output.implementation_examples,
                     "sources": research_result.research_output.sources,
                 },

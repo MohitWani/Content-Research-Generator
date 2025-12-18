@@ -66,7 +66,7 @@ class TestResearchWorkflow:
     ):
         """Should execute research workflow for core AI topic"""
         from src.lib.orchestrator.workflow_manager import WorkflowManager
-        from src.lib.agents.react_research_agent import ResearchOutput
+        from src.lib.agents.agentic_researcher import ResearchOutput
         from src.lib.models.schemas import TopicCategorizationResult
         
         # Arrange
@@ -82,7 +82,7 @@ class TestResearchWorkflow:
         )
         
         # Mock research output
-        mock_research_agent.conduct_research.return_value = ResearchOutput(
+        mock_research_agent.research.return_value = ResearchOutput(
             topic_summary="The attention mechanism allows models to focus on relevant parts...",
             key_concepts={"attention": "Focus mechanism", "self-attention": "Same-sequence attention"},
             mathematical_foundations="Attention(Q,K,V) = softmax(QK^T/√d_k)V",
@@ -111,7 +111,7 @@ class TestResearchWorkflow:
         
         # Verify agents were called correctly
         mock_topic_agent.categorize_query.assert_called_once_with(query)
-        mock_research_agent.conduct_research.assert_called_once()
+        mock_research_agent.research.assert_called_once()
     
     async def test_research_workflow_practical(
         self, 
@@ -121,7 +121,7 @@ class TestResearchWorkflow:
     ):
         """Should execute research workflow for practical implementation topic"""
         from src.lib.orchestrator.workflow_manager import WorkflowManager
-        from src.lib.agents.react_research_agent import ResearchOutput
+        from src.lib.agents.agentic_researcher import ResearchOutput
         from src.lib.models.schemas import TopicCategorizationResult
         
         # Arrange
@@ -137,7 +137,7 @@ class TestResearchWorkflow:
         )
         
         # Mock research output with step-by-step guide
-        mock_research_agent.conduct_research.return_value = ResearchOutput(
+        mock_research_agent.research.return_value = ResearchOutput(
             topic_summary="LangChain is a framework for building LLM applications...",
             key_concepts={"RAG": "Retrieval Augmented Generation"},
             implementation_examples="Step 1: Install LangChain\n```pip install langchain```\nStep 2: Set up vector store...",
@@ -169,7 +169,7 @@ class TestResearchWorkflow:
     ):
         """Should persist research results to database"""
         from src.lib.orchestrator.workflow_manager import WorkflowManager
-        from src.lib.agents.react_research_agent import ResearchOutput
+        from src.lib.agents.agentic_researcher import ResearchOutput
         from src.lib.models.schemas import TopicCategorizationResult
         from sqlalchemy import select
         
@@ -184,7 +184,7 @@ class TestResearchWorkflow:
             is_ai_related=True,
         )
         
-        mock_research_agent.conduct_research.return_value = ResearchOutput(
+        mock_research_agent.research.return_value = ResearchOutput(
             topic_summary="Transformers are neural network architectures...",
             key_concepts={"transformer": "Architecture"},
             sources=[],
@@ -399,7 +399,7 @@ class TestFullWorkflow:
     ):
         """Should execute complete workflow from query to blog post"""
         from src.lib.orchestrator.workflow_manager import WorkflowManager
-        from src.lib.agents.react_research_agent import ResearchOutput
+        from src.lib.agents.agentic_researcher import ResearchOutput
         from src.lib.agents.blog_writer_agent import BlogOutput
         from src.lib.models.schemas import TopicCategorizationResult
         
@@ -414,7 +414,7 @@ class TestFullWorkflow:
             is_ai_related=True,
         )
         
-        mock_research_agent.conduct_research.return_value = ResearchOutput(
+        mock_research_agent.research.return_value = ResearchOutput(
             topic_summary="Transformers are neural networks...",
             key_concepts={"transformer": "AI architecture"},
             sources=[{"type": "paper", "title": "Attention Is All You Need"}],
@@ -458,7 +458,7 @@ class TestFullWorkflow:
     ):
         """Should handle research with low completeness score"""
         from src.lib.orchestrator.workflow_manager import WorkflowManager
-        from src.lib.agents.react_research_agent import ResearchOutput
+        from src.lib.agents.agentic_researcher import ResearchOutput
         from src.lib.models.schemas import TopicCategorizationResult
         
         # Arrange
@@ -473,7 +473,7 @@ class TestFullWorkflow:
         )
         
         # Low completeness research
-        mock_research_agent.conduct_research.return_value = ResearchOutput(
+        mock_research_agent.research.return_value = ResearchOutput(
             topic_summary="Limited information available...",
             key_concepts={},
             sources=[],
@@ -507,7 +507,7 @@ class TestWorkflowStateManagement:
     ):
         """Should persist workflow state to database"""
         from src.lib.orchestrator.workflow_manager import WorkflowManager
-        from src.lib.agents.react_research_agent import ResearchOutput
+        from src.lib.agents.agentic_researcher import ResearchOutput
         from src.lib.models.schemas import TopicCategorizationResult
         
         # Arrange
@@ -521,7 +521,7 @@ class TestWorkflowStateManagement:
             is_ai_related=True,
         )
         
-        mock_research_agent.conduct_research.return_value = ResearchOutput(
+        mock_research_agent.research.return_value = ResearchOutput(
             topic_summary="Transformers are...",
             key_concepts={},
             sources=[],
@@ -550,7 +550,7 @@ class TestWorkflowStateManagement:
     ):
         """Should track pipeline execution in database"""
         from src.lib.orchestrator.workflow_manager import WorkflowManager
-        from src.lib.agents.react_research_agent import ResearchOutput
+        from src.lib.agents.agentic_researcher import ResearchOutput
         from src.lib.models.schemas import TopicCategorizationResult
         from src.lib.models.research import PipelineExecution
         from sqlalchemy import select
@@ -566,7 +566,7 @@ class TestWorkflowStateManagement:
             is_ai_related=True,
         )
         
-        mock_research_agent.conduct_research.return_value = ResearchOutput(
+        mock_research_agent.research.return_value = ResearchOutput(
             topic_summary="Transformers are...",
             key_concepts={},
             sources=[],

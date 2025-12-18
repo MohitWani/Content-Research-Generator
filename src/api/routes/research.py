@@ -1,6 +1,7 @@
 """
 Research API Routes
 Endpoints for research queries and results
+Uses AgenticResearcher with LangGraph's create_react_agent
 """
 from typing import List, Optional
 from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
@@ -15,7 +16,7 @@ from src.lib.models.schemas import (
     ResearchStatusResponse,
     ResearchResultResponse,
 )
-from src.lib.orchestrator.workflow_manager import WorkflowManager
+from src.lib.agents import AgenticResearcher, TopicAgent
 from src.lib.pipelines.research_pipeline import ResearchPipeline
 from src.common.logger import setup_logger
 
@@ -46,12 +47,15 @@ async def create_research_query(
         db.add(query_record)
         await db.commit()
         await db.refresh(query_record)
-        
+
+        logger.info(f"Created research query: {query_record.id}")
         # Execute research in background
         query_id = query_record.id
         query_text = request.query
         target_audience_str = request.target_audience
-        
+
+        logger.info(f"Running research for query: {query_text}, {target_audience_str}, {request.content_type}")
+
         async def run_research():
             async with get_session() as session:
                 pipeline = ResearchPipeline(db_session=session)
@@ -61,9 +65,10 @@ async def create_research_query(
                     target_audience=target_audience_str,
                 )
         
+        logger.info(f"Added background task to run research")
         background_tasks.add_task(run_research)
         
-        logger.info(f"Created research query: {query_record.id}")
+        logger.info(f"Returned research query response: {query_record.id}")
         
         return ResearchQueryResponse(
             query_id=query_record.id,
@@ -112,7 +117,6 @@ async def get_research_result(
         raise HTTPException(status_code=404, detail="Research result not found")
     
     return ResearchResultResponse(
-        id=result.id,
         query_id=result.query_id,
         topic_summary=result.topic_summary,
         key_concepts=result.key_concepts,
@@ -165,28 +169,69 @@ async def create_research_sync(
     """
     Create research query and wait for result (synchronous)
     
-    Use for immediate results; may take longer to respond
+    Uses AgenticResearcher with LangGraph's create_react_agent
+    for modern, clean agentic workflow.
     """
     try:
-        workflow = WorkflowManager(db_session=db)
+        # Step 1: Categorize the query
+        topic_agent = TopicAgent()
+        categorization = await topic_agent.categorize_query(request.query)
         
-        result = await workflow.execute_research_workflow(
+        # Map category string to enum
+        category_map = {
+            "core_ai": TopicCategory.CORE_AI,
+            "practical_implementation": TopicCategory.PRACTICAL_IMPLEMENTATION,
+            "software_development": TopicCategory.SOFTWARE_DEVELOPMENT,
+            "web_development": TopicCategory.WEB_DEVELOPMENT,
+            "devops": TopicCategory.DEVOPS,
+            "general_tech": TopicCategory.GENERAL_TECH,
+        }
+        topic_category = category_map.get(categorization.category, TopicCategory.GENERAL_TECH)
+        
+        logger.info(f"Query categorized as: {topic_category.value}")
+        
+        # Step 2: Create query record
+        query_record = ResearchQuery(
+            query_text=request.query,
+            target_audience=request.target_audience.value if request.target_audience else "practitioner",
+            topic_category=topic_category.value,
+            content_type=request.content_type.value if request.content_type else "blog",
+            status="processing",
+        )
+        db.add(query_record)
+        await db.flush()
+        
+        # Step 3: Run agentic research
+        researcher = AgenticResearcher(max_iterations=5)
+        research_output = await researcher.research(
             query=request.query,
-            target_audience=request.target_audience,
+            category=topic_category,
+            target_audience=request.target_audience.value if request.target_audience else "practitioner",
         )
         
+        # Step 4: Persist research result
+        # Note: source_descriptions maps to historical_context in DB for backward compatibility
+        research_result = ResearchResult(
+            query_id=query_record.id,
+            topic_summary=research_output.topic_summary,
+            key_concepts=research_output.key_concepts,
+            mathematical_foundations=research_output.mathematical_foundations,
+            historical_context=research_output.source_descriptions,  # Contains all source descriptions
+            implementation_examples=research_output.implementation_examples,
+            sources=research_output.sources,
+            completeness_score=research_output.completeness_score,
+            research_data_path=research_output.research_data_path,
+        )
+        db.add(research_result)
+        
+        # Step 5: Update query status
+        query_record.status = "completed"
         await db.commit()
+        await db.refresh(research_result)
         
-        # Fetch the result
-        research_result = await db.scalar(
-            select(ResearchResult).where(ResearchResult.query_id == result.query_id)
-        )
-        
-        if not research_result:
-            raise HTTPException(status_code=500, detail="Research result not created")
+        logger.info(f"Sync research completed: query_id={query_record.id}")
         
         return ResearchResultResponse(
-            id=research_result.id,
             query_id=research_result.query_id,
             topic_summary=research_result.topic_summary,
             key_concepts=research_result.key_concepts,
@@ -199,6 +244,6 @@ async def create_research_sync(
         )
         
     except Exception as e:
-        logger.error(f"Sync research failed: {e}")
+        logger.error(f"Sync research failed: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 

@@ -2,10 +2,10 @@
 AI Agents for research and content generation
 """
 from src.lib.agents.topic_agent import TopicAgent, get_topic_agent
-from src.lib.agents.react_research_agent import (
-    ReActResearchAgent,
+from src.lib.agents.agentic_researcher import (
+    AgenticResearcher,
     ResearchOutput,
-    get_react_research_agent,
+    get_agentic_researcher,
 )
 from src.lib.agents.blog_writer_agent import (
     BlogWriterAgent,
@@ -31,20 +31,25 @@ from src.lib.agents.arxiv_paper_research_agent import (
     get_arxiv_paper_research_agent,
 )
 
-# Alias for backward compatibility
-ResearchAgent = ReActResearchAgent
-get_research_agent = get_react_research_agent
+# Backward compatibility aliases
+ResearchAgent = AgenticResearcher
+ReActResearchAgent = AgenticResearcher
+get_research_agent = get_agentic_researcher
+get_react_research_agent = get_agentic_researcher
 
 __all__ = [
     # Topic Agent
     "TopicAgent",
     "get_topic_agent",
-    # Research Agent (ReAct)
-    "ReActResearchAgent",
-    "ResearchAgent",  # Alias
+    # Agentic Researcher (Modern)
+    "AgenticResearcher",
     "ResearchOutput",
+    "get_agentic_researcher",
+    # Backward compatibility aliases
+    "ReActResearchAgent",
+    "ResearchAgent",
     "get_react_research_agent",
-    "get_research_agent",  # Alias
+    "get_research_agent",
     # Blog Writer Agent
     "BlogWriterAgent",
     "BlogOutput",

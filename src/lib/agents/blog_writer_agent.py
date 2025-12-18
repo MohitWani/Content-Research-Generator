@@ -10,8 +10,9 @@ from pathlib import Path
 import json
 
 from src.lib.llm.model import BedrockLLM
-from src.lib.llm.prompt_loader import load_prompt, get_audience_guidelines
-from src.lib.agents.react_research_agent import ResearchOutput
+from src.lib.llm.prompts import prompts
+from src.lib.llm.prompt_loader import get_audience_guidelines
+from src.lib.agents.agentic_researcher import ResearchOutput
 from src.lib.models.exceptions import (
     BlogGenerationError,
     ResearchDataInsufficientError,
@@ -103,9 +104,9 @@ class BlogWriterAgent:
             # Extract topic for title generation
             topic = research_dict.get("topic_summary", "")[:200]
             
-            # Load and format blog prompt
-            prompt = load_prompt(
-                "blog_prompt",
+            # Build prompts using class-based prompts
+            system_prompt = prompts.blog.system_prompt()
+            user_prompt = prompts.blog.user_prompt(
                 topic=topic,
                 target_audience=target_audience,
                 tone=tone,
@@ -117,11 +118,8 @@ class BlogWriterAgent:
             logger.debug(f"Generating blog for audience: {target_audience}")
             
             response = await self.llm.ainvoke(
-                prompt=prompt,
-                system_prompt=(
-                    "You are an expert technical writer creating blog posts for Medium. "
-                    "Write engaging, well-structured content. Respond only with valid JSON."
-                ),
+                prompt=user_prompt,
+                system_prompt=system_prompt,
                 parse_json=True,
             )
             

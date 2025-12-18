@@ -41,7 +41,7 @@ class Config:
         "BEDROCK_MODEL_ID",
         "anthropic.claude-3-5-sonnet-20241022-v2:0"
     )
-    BEDROCK_MAX_TOKENS = int(os.getenv("BEDROCK_MAX_TOKENS", "50000"))
+    BEDROCK_MAX_TOKENS = int(os.getenv("BEDROCK_MAX_TOKENS", "3000"))
     BEDROCK_TEMPERATURE = float(os.getenv("BEDROCK_TEMPERATURE", "0.7"))
     
     # External API configuration

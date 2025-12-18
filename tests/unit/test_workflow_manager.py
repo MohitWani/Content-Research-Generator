@@ -74,7 +74,7 @@ class TestResearchWorkflowExecution:
         mock_research_agent,
     ):
         """Should execute research workflow for core AI topic"""
-        from src.lib.agents.react_research_agent import ResearchOutput
+        from src.lib.agents.agentic_researcher import ResearchOutput
         from src.lib.models.schemas import TopicCategorizationResult
         
         # Arrange
@@ -85,7 +85,7 @@ class TestResearchWorkflowExecution:
             reasoning="Core AI",
             is_ai_related=True,
         )
-        mock_research_agent.conduct_research.return_value = ResearchOutput(
+        mock_research_agent.research.return_value = ResearchOutput(
             topic_summary="Transformers are...",
             key_concepts={"attention": "Focus"},
             mathematical_foundations="Q·K^T/√d",
@@ -101,7 +101,7 @@ class TestResearchWorkflowExecution:
         assert result.research_result is not None
         assert result.research_result.mathematical_foundations is not None
         mock_topic_agent.categorize_query.assert_called_once_with(query)
-        mock_research_agent.conduct_research.assert_called_once()
+        mock_research_agent.research.assert_called_once()
     
     async def test_execute_research_workflow_practical(
         self,
@@ -110,7 +110,7 @@ class TestResearchWorkflowExecution:
         mock_research_agent,
     ):
         """Should execute research workflow for practical topic"""
-        from src.lib.agents.react_research_agent import ResearchOutput
+        from src.lib.agents.agentic_researcher import ResearchOutput
         from src.lib.models.schemas import TopicCategorizationResult
         
         # Arrange
@@ -121,7 +121,7 @@ class TestResearchWorkflowExecution:
             reasoning="Tool usage",
             is_ai_related=True,
         )
-        mock_research_agent.conduct_research.return_value = ResearchOutput(
+        mock_research_agent.research.return_value = ResearchOutput(
             topic_summary="LangChain is...",
             key_concepts={},
             implementation_examples="Step 1: Install...",
@@ -160,7 +160,7 @@ class TestResearchWorkflowExecution:
         mock_research_agent,
     ):
         """Should call agents in correct order: topic → research"""
-        from src.lib.agents.react_research_agent import ResearchOutput
+        from src.lib.agents.agentic_researcher import ResearchOutput
         from src.lib.models.schemas import TopicCategorizationResult
         
         # Arrange
@@ -184,7 +184,7 @@ class TestResearchWorkflowExecution:
             )
         
         mock_topic_agent.categorize_query.side_effect = track_topic
-        mock_research_agent.conduct_research.side_effect = track_research
+        mock_research_agent.research.side_effect = track_research
         
         # Act
         await workflow_manager.execute_research_workflow("query", "practitioner")
@@ -297,7 +297,7 @@ class TestFullWorkflowExecution:
         mock_db_session,
     ):
         """Should execute complete workflow: query → research → blog"""
-        from src.lib.agents.react_research_agent import ResearchOutput
+        from src.lib.agents.agentic_researcher import ResearchOutput
         from src.lib.agents.blog_writer_agent import BlogOutput
         from src.lib.models.schemas import TopicCategorizationResult
         from src.lib.models.research import ResearchResult
@@ -308,7 +308,7 @@ class TestFullWorkflowExecution:
             confidence=0.9,
             is_ai_related=True,
         )
-        mock_research_agent.conduct_research.return_value = ResearchOutput(
+        mock_research_agent.research.return_value = ResearchOutput(
             topic_summary="Transformers...",
             key_concepts={},
             sources=[],
@@ -377,7 +377,7 @@ class TestWorkflowErrorHandling:
             confidence=0.9,
             is_ai_related=True,
         )
-        mock_research_agent.conduct_research.side_effect = Exception("Research failed")
+        mock_research_agent.research.side_effect = Exception("Research failed")
         
         # Act & Assert
         with pytest.raises(Exception) as exc:

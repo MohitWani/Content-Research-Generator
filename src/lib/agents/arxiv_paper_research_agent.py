@@ -13,7 +13,8 @@ from pathlib import Path
 from langchain_core.messages import HumanMessage, SystemMessage
 
 from src.lib.llm.model import BedrockLLM
-from src.lib.llm.prompt_loader import load_prompt, get_audience_guidelines
+from src.lib.llm.prompts import prompts
+from src.lib.llm.prompt_loader import get_audience_guidelines
 from src.lib.services.arxiv_client import ArXivClient
 from src.lib.services.arxiv_id_parser import (
     parse_arxiv_id,
@@ -341,9 +342,11 @@ class ArXivPaperResearchAgent:
         # Build research summary for blog prompt
         research_summary = self._format_for_blog(research_output)
         
-        # Load and format blog prompt
-        prompt = load_prompt(
-            "paper_blog",
+        # Get paper blog prompt
+        paper_blog_prompt = prompts.paper_blog
+        
+        # Build user prompt
+        user_prompt = paper_blog_prompt.user_prompt(
             paper_title=research_output.paper_metadata.title,
             paper_authors=", ".join(research_output.paper_metadata.authors[:5]),
             arxiv_id=research_output.paper_metadata.arxiv_id,
@@ -353,14 +356,18 @@ class ArXivPaperResearchAgent:
             audience_guidelines=audience_guidelines,
         )
         
+        # Get system prompt with paper details
+        system_prompt = paper_blog_prompt.system_prompt(
+            paper_title=research_output.paper_metadata.title,
+            paper_authors=", ".join(research_output.paper_metadata.authors[:5]),
+            arxiv_id=research_output.paper_metadata.arxiv_id,
+            paper_published=research_output.paper_metadata.published,
+        )
+        
         # Generate blog content
         response = await self.llm.ainvoke(
-            prompt=prompt,
-            system_prompt=(
-                "You are an expert technical writer creating blog posts for Medium. "
-                "Write engaging, well-structured content based on academic paper research. "
-                "Respond only with valid JSON."
-            ),
+            prompt=user_prompt,
+            system_prompt=system_prompt,
             parse_json=True,
         )
         
@@ -439,9 +446,11 @@ class ArXivPaperResearchAgent:
         # Get audience guidelines
         audience_guidelines = get_audience_guidelines(target_audience)
         
-        # Load and format research prompt
-        prompt = load_prompt(
-            "paper_research",
+        # Get paper research prompt
+        paper_prompt = prompts.paper
+        
+        # Build user prompt
+        user_prompt = paper_prompt.user_prompt(
             paper_title=paper_metadata.title,
             paper_authors=", ".join(paper_metadata.authors[:5]),
             arxiv_id=paper_metadata.arxiv_id,
@@ -452,16 +461,15 @@ class ArXivPaperResearchAgent:
             audience_guidelines=audience_guidelines,
         )
         
+        # Get system prompt
+        system_prompt = paper_prompt.system_prompt()
+        
         logger.debug("Calling LLM for paper research...")
         
         # Call LLM
         response = await self.llm.ainvoke(
-            prompt=prompt,
-            system_prompt=(
-                "You are an expert AI Research Analyst. Analyze academic papers thoroughly "
-                "and produce comprehensive, accurate research reports. "
-                "Respond ONLY with valid JSON."
-            ),
+            prompt=user_prompt,
+            system_prompt=system_prompt,
             parse_json=True,
         )
         

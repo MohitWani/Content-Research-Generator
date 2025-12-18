@@ -129,7 +129,7 @@ class ResearchResultResponse(BaseModel):
     )
     historical_context: Optional[str] = Field(
         None, 
-        description="Historical background"
+        description="LLM-generated summary of all content fetched by research tools"
     )
     implementation_examples: Optional[str] = Field(
         None, 

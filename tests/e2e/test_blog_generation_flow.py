@@ -183,14 +183,14 @@ class TestFullContentPipelineE2E:
         from src.lib.pipelines.research_pipeline import ResearchPipeline
         from src.lib.pipelines.blog_pipeline import BlogGenerationPipeline
         from src.lib.agents.topic_agent import TopicAgent
-        from src.lib.agents.react_research_agent import ResearchAgent, ResearchOutput
+        from src.lib.agents.agentic_researcher import AgenticResearcher as ResearchAgent, ResearchOutput
         from src.lib.agents.blog_writer_agent import BlogWriterAgent, BlogOutput
         from src.lib.agents.branding_agent import BrandingAgent, BrandingResult
         from src.lib.agents.shortform_agent import ShortformAgent, LinkedInPost
         from src.lib.models.schemas import TopicCategorizationResult
         
         with patch.object(TopicAgent, 'categorize_query') as mock_cat, \
-             patch.object(ResearchAgent, 'conduct_research') as mock_res, \
+             patch.object(ResearchAgent, 'research') as mock_res, \
              patch.object(BlogWriterAgent, 'generate_blog') as mock_blog, \
              patch.object(BrandingAgent, 'apply_branding') as mock_brand, \
              patch.object(ShortformAgent, 'generate_linkedin_post') as mock_li:

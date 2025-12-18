@@ -10,8 +10,9 @@ from pathlib import Path
 import json
 
 from src.lib.llm.model import BedrockLLM
-from src.lib.llm.prompt_loader import load_prompt, get_audience_guidelines
-from src.lib.agents.react_research_agent import ResearchOutput
+from src.lib.llm.prompts import prompts
+from src.lib.llm.prompt_loader import get_audience_guidelines
+from src.lib.agents.agentic_researcher import ResearchOutput
 from src.lib.agents.blog_writer_agent import BlogOutput
 from src.lib.models.exceptions import ContentGenerationError
 from src.common.config import config

@@ -147,9 +147,11 @@ class StateManager:
             )
             self.db_session.add(pipeline)
             await self.db_session.flush()
+            logger.info(f"Created pipeline execution record: {pipeline.id}")
             workflow_id = pipeline.id
         else:
             # In-memory only
+            logger.info(f"Creating in-memory workflow context for query: {query_id}")
             workflow_id = len(self._contexts) + 1
         
         context = WorkflowContext(

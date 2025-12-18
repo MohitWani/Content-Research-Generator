@@ -14,7 +14,6 @@ from src.lib.models.schemas import (
     BlogGenerationResponse,
     ContentItemResponse,
 )
-from src.lib.orchestrator.workflow_manager import WorkflowManager
 from src.lib.pipelines.blog_pipeline import BlogGenerationPipeline
 from src.common.logger import setup_logger
 

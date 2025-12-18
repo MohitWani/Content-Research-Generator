@@ -3,19 +3,15 @@ Research Pipeline for automated research workflows
 Orchestrates: Topic Categorization → Data Collection → Synthesis
 Maps to: spec.md → Story 6, FR6
 """
-from typing import Optional, Dict, Any, List
+from typing import Optional, List
 from dataclasses import dataclass
 from datetime import datetime
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.lib.agents.topic_agent import TopicAgent
-from src.lib.agents.react_research_agent import ReActResearchAgent, ResearchOutput
-from src.lib.orchestrator.state_manager import (
-    StateManager,
-    CheckpointType,
-    WorkflowState,
-)
+from src.lib.agents.agentic_researcher import AgenticResearcher, ResearchOutput
+from src.lib.orchestrator.state_manager import StateManager, CheckpointType
 from src.lib.models.research import TopicCategory, ResearchQuery, ResearchResult
 from src.lib.models.exceptions import QueryCategorizationError
 from src.common.logger import setup_logger
@@ -39,13 +35,13 @@ class ResearchPipeline:
     """
     Automated research pipeline
     Handles the full research workflow with checkpointing
-    Uses LangGraph ReAct agent with LangChain tools
+    Uses AgenticResearcher with LangGraph's create_react_agent
     """
     
     def __init__(
         self,
         topic_agent: Optional[TopicAgent] = None,
-        research_agent: Optional[ReActResearchAgent] = None,
+        research_agent: Optional[AgenticResearcher] = None,
         state_manager: Optional[StateManager] = None,
         db_session: Optional[AsyncSession] = None,
     ):
@@ -54,16 +50,16 @@ class ResearchPipeline:
         
         Args:
             topic_agent: Topic categorization agent
-            research_agent: ReAct research agent with LangChain tools
+            research_agent: AgenticResearcher with LangGraph
             state_manager: State manager for checkpoints
             db_session: Database session
         """
         self.topic_agent = topic_agent or TopicAgent()
-        self.research_agent = research_agent or ReActResearchAgent(max_iterations=10)
+        self.research_agent = research_agent or AgenticResearcher(max_iterations=5)
         self.state_manager = state_manager or StateManager(db_session)
         self.db_session = db_session
         
-        logger.info("Initialized ResearchPipeline")
+        logger.info("Initialized ResearchPipeline with AgenticResearcher")
     
     async def execute(
         self,
@@ -104,7 +100,10 @@ class ResearchPipeline:
         start_time = datetime.utcnow()
         
         # Create workflow context
+        logger.info(f"Creating workflow context for query: {query_id}")
         context = await self.state_manager.create_workflow("research", query_id=query_id)
+
+        logger.info(f"Starting workflow for query: {query_id}")
         await self.state_manager.start_workflow(context.workflow_id)
         
         try:
@@ -112,9 +111,11 @@ class ResearchPipeline:
             await self._update_query_status(query_id, "processing")
             
             # Step 1: Categorize topic
-            logger.info(f"Pipeline step 1: Categorizing query (id={query_id})")
+            logger.info(f"Pipeline step 1: Categorizing query (id={query_id}) and query is {query}")
+
             categorization = await self.topic_agent.categorize_query(query)
-            
+
+            logger.info(f"Pipeline step 1 completed, Categorization result: {categorization.category} and confidence: {categorization.confidence}")
             # Map category string to enum
             category_map = {
                 "core_ai": TopicCategory.CORE_AI,
@@ -139,13 +140,16 @@ class ResearchPipeline:
             )
             
             # Step 2: Conduct research
-            logger.info(f"Pipeline step 2: Conducting research (id={query_id})")
+            logger.info(f"Pipeline step 2: Conducting research (id={query_id}) and query is {query}")
+            
             await self.state_manager.add_checkpoint(
                 context.workflow_id,
                 CheckpointType.RESEARCH_STARTED,
             )
             
-            research_output = await self.research_agent.conduct_research(
+            logger.info(f"Starting research agent with query: {query}, category: {topic_category}, target audience: {target_audience}")
+
+            research_output = await self.research_agent.research(
                 query=query,
                 category=topic_category,
                 target_audience=target_audience,
@@ -158,7 +162,7 @@ class ResearchPipeline:
             )
             
             # Step 3: Persist research result
-            logger.info(f"Pipeline step 3: Persisting results (id={query_id})")
+            logger.info(f"Pipeline step 3: Persisting results (id={query_id}) and research output is {research_output}...")
             await self._persist_result(query_id, research_output)
             
             await self.state_manager.add_checkpoint(
@@ -279,7 +283,7 @@ class ResearchPipeline:
             topic_summary=research_output.topic_summary,
             key_concepts=research_output.key_concepts,
             mathematical_foundations=research_output.mathematical_foundations,
-            historical_context=research_output.historical_context,
+            historical_context=research_output.source_descriptions,
             implementation_examples=research_output.implementation_examples,
             sources=research_output.sources,
             completeness_score=research_output.completeness_score,

@@ -1,18 +1,22 @@
 """
-Unit tests for ReAct Research Agent
-Tests LangGraph-based research with LangChain tools
+Unit tests for Agentic Research Agent
+Tests LangGraph-based research with create_react_agent
 Maps to: spec.md → Story 1, Story 8, Story 9, FR2
 """
 import pytest
 from unittest.mock import AsyncMock, Mock, patch, MagicMock
 from datetime import datetime
 
-from src.lib.agents.react_research_agent import (
-    ReActResearchAgent,
+from src.lib.agents.agentic_researcher import (
+    AgenticResearcher,
     ResearchOutput,
-    create_langchain_tools,
+    create_research_tools,
 )
 from src.lib.models.research import TopicCategory
+
+# Alias for backward compatibility in tests
+ReActResearchAgent = AgenticResearcher
+create_langchain_tools = create_research_tools
 
 
 @pytest.fixture
@@ -65,7 +69,7 @@ class TestReActResearchAgent:
     
     def test_agent_initialization(self, mock_llm):
         """Test agent initializes with LangChain tools"""
-        with patch('src.lib.agents.react_research_agent.create_langchain_tools') as mock_tools:
+        with patch('src.lib.agents.agentic_researcher.create_langchain_tools') as mock_tools:
             mock_tools.return_value = [MagicMock(name="tool1"), MagicMock(name="tool2")]
             
             agent = ReActResearchAgent(llm=mock_llm, max_iterations=5)
@@ -75,7 +79,7 @@ class TestReActResearchAgent:
     
     def test_agent_default_iterations(self, mock_llm):
         """Test agent uses default max iterations"""
-        with patch('src.lib.agents.react_research_agent.create_langchain_tools') as mock_tools:
+        with patch('src.lib.agents.agentic_researcher.create_langchain_tools') as mock_tools:
             mock_tools.return_value = []
             
             agent = ReActResearchAgent(llm=mock_llm)
@@ -88,16 +92,16 @@ class TestLangChainTools:
     
     def test_tools_created_with_tavily_key(self):
         """Test tools are created when Tavily API key is set"""
-        with patch('src.lib.agents.react_research_agent.config') as mock_config:
+        with patch('src.lib.agents.agentic_researcher.config') as mock_config:
             mock_config.TAVILY_API_KEY = "test-key"
             mock_config.GITHUB_TOKEN = None
             
             # Mock the tool classes to avoid actual initialization
-            with patch('src.lib.agents.react_research_agent.TavilySearchResults'):
-                with patch('src.lib.agents.react_research_agent.ArxivAPIWrapper'):
-                    with patch('src.lib.agents.react_research_agent.ArxivQueryRun'):
-                        with patch('src.lib.agents.react_research_agent.WikipediaAPIWrapper'):
-                            with patch('src.lib.agents.react_research_agent.WikipediaQueryRun'):
+            with patch('src.lib.agents.agentic_researcher.TavilySearchResults'):
+                with patch('src.lib.agents.agentic_researcher.ArxivAPIWrapper'):
+                    with patch('src.lib.agents.agentic_researcher.ArxivQueryRun'):
+                        with patch('src.lib.agents.agentic_researcher.WikipediaAPIWrapper'):
+                            with patch('src.lib.agents.agentic_researcher.WikipediaQueryRun'):
                                 tools = create_langchain_tools()
                                 
                                 # Should have at least scrape_webpage, github_search, web_search
@@ -105,14 +109,14 @@ class TestLangChainTools:
     
     def test_tools_created_without_tavily_key(self):
         """Test tools are created even without Tavily API key"""
-        with patch('src.lib.agents.react_research_agent.config') as mock_config:
+        with patch('src.lib.agents.agentic_researcher.config') as mock_config:
             mock_config.TAVILY_API_KEY = None
             mock_config.GITHUB_TOKEN = None
             
-            with patch('src.lib.agents.react_research_agent.ArxivAPIWrapper'):
-                with patch('src.lib.agents.react_research_agent.ArxivQueryRun'):
-                    with patch('src.lib.agents.react_research_agent.WikipediaAPIWrapper'):
-                        with patch('src.lib.agents.react_research_agent.WikipediaQueryRun'):
+            with patch('src.lib.agents.agentic_researcher.ArxivAPIWrapper'):
+                with patch('src.lib.agents.agentic_researcher.ArxivQueryRun'):
+                    with patch('src.lib.agents.agentic_researcher.WikipediaAPIWrapper'):
+                        with patch('src.lib.agents.agentic_researcher.WikipediaQueryRun'):
                             tools = create_langchain_tools()
                             
                             # Should still have other tools
@@ -124,7 +128,7 @@ class TestCompletenessScore:
     
     def test_high_completeness_core_ai(self, mock_llm):
         """Test high completeness score for complete core AI research"""
-        with patch('src.lib.agents.react_research_agent.create_langchain_tools') as mock_tools:
+        with patch('src.lib.agents.agentic_researcher.create_langchain_tools') as mock_tools:
             mock_tools.return_value = []
             
             agent = ReActResearchAgent(llm=mock_llm)
@@ -144,7 +148,7 @@ class TestCompletenessScore:
     
     def test_low_completeness(self, mock_llm):
         """Test low completeness score for minimal research"""
-        with patch('src.lib.agents.react_research_agent.create_langchain_tools') as mock_tools:
+        with patch('src.lib.agents.agentic_researcher.create_langchain_tools') as mock_tools:
             mock_tools.return_value = []
             
             agent = ReActResearchAgent(llm=mock_llm)
@@ -165,7 +169,7 @@ class TestResearchOutputParsing:
     
     def test_parse_valid_json(self, mock_llm):
         """Test parsing valid JSON synthesis output"""
-        with patch('src.lib.agents.react_research_agent.create_langchain_tools') as mock_tools:
+        with patch('src.lib.agents.agentic_researcher.create_langchain_tools') as mock_tools:
             mock_tools.return_value = []
             
             agent = ReActResearchAgent(llm=mock_llm)
@@ -193,7 +197,7 @@ class TestResearchOutputParsing:
     
     def test_parse_invalid_json_fallback(self, mock_llm):
         """Test fallback when JSON parsing fails"""
-        with patch('src.lib.agents.react_research_agent.create_langchain_tools') as mock_tools:
+        with patch('src.lib.agents.agentic_researcher.create_langchain_tools') as mock_tools:
             mock_tools.return_value = []
             
             agent = ReActResearchAgent(llm=mock_llm)

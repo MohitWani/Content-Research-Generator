@@ -6,7 +6,7 @@ Maps to: spec.md → Story 2, FR1
 from typing import Optional
 
 from src.lib.llm.model import BedrockLLM
-from src.lib.llm.prompt_loader import load_prompt
+from src.lib.llm.prompts import prompts
 from src.lib.models.research import TopicCategory
 from src.lib.models.schemas import TopicCategorizationResult
 from src.lib.models.exceptions import QueryCategorizationError
@@ -61,48 +61,23 @@ class TopicAgent:
         query = query.strip()
         
         try:
-            # Build categorization prompt
-            prompt = f"""Analyze this research query and categorize it.
-
-Query: {query}
-
-Categories:
-1. core_ai - Core AI/ML concepts, algorithms, research papers, mathematical foundations
-   Examples: transformer architecture, attention mechanism, neural networks, backpropagation
-   
-2. practical_implementation - Practical AI implementation, tools, frameworks, tutorials
-   Examples: how to use LangChain, RAG implementation, fine-tuning models, prompt engineering
-   
-3. software_development - General software development, programming, system design
-   Examples: design patterns, clean code, testing, API design, microservices
-   
-4. web_development - Web technologies, frontend, backend, databases
-   Examples: React, Node.js, REST APIs, GraphQL, SQL, MongoDB
-   
-5. devops - DevOps, cloud, infrastructure, deployment
-   Examples: Docker, Kubernetes, CI/CD, AWS, Azure, monitoring
-   
-6. general_tech - Other technology topics
-   Examples: blockchain, IoT, cybersecurity, general tech news
-
-Respond with JSON:
-{{
-    "category": "one of the category keys above",
-    "confidence": 0.0 to 1.0,
-    "reasoning": "Brief explanation of categorization",
-    "is_ai_related": true/false (whether this is an AI/ML topic)
-}}"""
+            # Build prompts using class-based prompts
+            system_prompt = prompts.topic.system_prompt()
+            user_prompt = prompts.topic.user_prompt(query=query)
             
-            logger.debug(f"Categorizing query: {query[:100]}...")
+            logger.debug(f"Categorizing query using Topic agent: {query[:100]}...")
             
             response = await self.llm.ainvoke(
-                prompt=prompt,
-                system_prompt="You are an expert tech topic classifier. Categorize queries accurately. Respond only with valid JSON.",
+                prompt=user_prompt,
+                system_prompt=system_prompt,
                 parse_json=True,
             )
-            
+
+            logger.info(f"Response from Topic agent: {response[:100]}...")
+
             # Validate response structure
             if not isinstance(response, dict):
+                logger.error(f"Invalid response format: expected dict, got {type(response)}")
                 raise QueryCategorizationError(f"Invalid response format: expected dict, got {type(response)}")
             
             # Parse category - no longer reject non-AI queries
@@ -126,7 +101,7 @@ Respond with JSON:
                 is_ai_related=is_ai_related,
             )
             
-            logger.info(f"Query categorized as {category.value} with confidence {confidence:.2f}")
+            logger.info(f"Query: {query} categorized as {category.value} with confidence {confidence:.2f}")
             
             return result
             

@@ -7,7 +7,7 @@ import pytest
 from unittest.mock import AsyncMock, Mock
 
 from src.lib.agents.blog_writer_agent import BlogWriterAgent, BlogOutput
-from src.lib.agents.react_research_agent import ResearchOutput
+from src.lib.agents.agentic_researcher import ResearchOutput
 from src.lib.models.exceptions import BlogGenerationError, ResearchDataInsufficientError
 
 

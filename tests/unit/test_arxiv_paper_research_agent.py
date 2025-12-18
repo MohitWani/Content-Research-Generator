@@ -4,11 +4,10 @@ Tests paper research logic, output parsing, and completeness scoring
 Maps to: spec.md → Story 1, 4, 5, FR3, FR4 | plan.md → T008, T009
 """
 import pytest
-import sys
 from unittest.mock import AsyncMock, Mock, patch
 from datetime import datetime
 
-# Import directly to avoid loading react_research_agent which requires langchain_community
+# Import directly to avoid circular imports
 from importlib import import_module
 _agent_module = import_module('src.lib.agents.arxiv_paper_research_agent')
 ArXivPaperResearchAgent = _agent_module.ArXivPaperResearchAgent
