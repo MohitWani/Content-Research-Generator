@@ -9,11 +9,11 @@ from datetime import datetime
 import json
 
 from pydantic import BaseModel, Field
-from langchain_core.messages import HumanMessage, SystemMessage, AIMessage, ToolMessage
-from langchain_core.tools import tool
-from langgraph.prebuilt import create_react_agent
+from langchain_core.messages import HumanMessage, SystemMessage, AIMessage, ToolMessage, BaseMessage
+from langchain_core.tools import tool, BaseTool
+from langchain.agents import create_agent
 
-# LangChain Community Tools
+# LangChain Community Tools (v0.4.1+)
 from langchain_community.tools.tavily_search import TavilySearchResults
 from langchain_community.tools.arxiv.tool import ArxivQueryRun
 from langchain_community.utilities.arxiv import ArxivAPIWrapper
@@ -47,9 +47,13 @@ class ResearchOutput(BaseModel):
 
 # ============= Tool Definitions =============
 
-def create_research_tools() -> list:
-    """Create research tools"""
-    tools = []
+def create_research_tools() -> List[BaseTool]:
+    """Create research tools for the agentic researcher.
+    
+    Returns:
+        List of LangChain tools including web search, arxiv, wikipedia, etc.
+    """
+    tools: List[BaseTool] = []
     
     # 1. Tavily Search
     if config.TAVILY_API_KEY:
@@ -152,7 +156,8 @@ SOURCE_TYPES = {
 
 class AgenticResearcher:
     """
-    LangGraph ReAct agent for research.
+    LangChain v1.1.0 Agent for research.
+    Uses create_agent (replacement for deprecated create_react_agent).
     Uses ainvoke for simple, synchronous-style execution.
     """
     
@@ -161,8 +166,9 @@ class AgenticResearcher:
         self.max_iterations = max_iterations
         self.tools = create_research_tools()
         
-        # Create ReAct agent (no checkpointer needed for single-use)
-        self.agent = create_react_agent(
+        # Create agent using LangChain v1.0+ API
+        # Note: create_agent replaces deprecated create_react_agent
+        self.agent = create_agent(
             model=self.llm.llm,
             tools=self.tools,
         )
@@ -176,7 +182,7 @@ class AgenticResearcher:
         target_audience: str = "practitioner",
     ) -> ResearchOutput:
         """
-        Execute research using ReAct agent with ainvoke.
+        Execute research using LangChain v1.1.0 agent with ainvoke.
         
         Args:
             query: Research query
@@ -185,10 +191,14 @@ class AgenticResearcher:
             
         Returns:
             ResearchOutput with research results
+            
+        Note:
+            LangChain v1.0+ uses create_agent instead of deprecated create_react_agent.
+            SystemMessage is passed in messages list (also supports system_prompt parameter).
         """
         logger.info(f"[RESEARCH] Query: '{query[:60]}...' | Category: {category.value}")
         
-        # Build messages
+        # Build messages - LangChain v1.0+ supports SystemMessage in messages list
         messages = [
             SystemMessage(content=prompts.research.system_prompt()),
             HumanMessage(content=prompts.research.user_prompt(
@@ -200,7 +210,7 @@ class AgenticResearcher:
             )),
         ]
         
-        # Config with recursion limit
+        # Config with recursion limit for agent execution
         agent_config = {
             "recursion_limit": self.max_iterations * 2 + 5,
         }
@@ -235,10 +245,22 @@ class AgenticResearcher:
                 key_concepts={"error": str(e)},
             )
     
-    def _extract_from_messages(self, messages: list) -> tuple:
-        """Extract tool calls, results, and final content from messages."""
-        tool_calls = []
-        tool_results = []
+    def _extract_from_messages(
+        self, messages: List[BaseMessage]
+    ) -> tuple[List[Dict[str, Any]], List[Dict[str, Any]], str]:
+        """Extract tool calls, results, and final content from messages.
+        
+        LangChain v1.0: AIMessage.tool_calls is the standard way to access
+        structured tool call information.
+        
+        Args:
+            messages: List of LangChain messages from agent execution
+            
+        Returns:
+            Tuple of (tool_calls, tool_results, final_content)
+        """
+        tool_calls: List[Dict[str, Any]] = []
+        tool_results: List[Dict[str, Any]] = []
         final_content = ""
 
         logger.info(f"[MESSAGES] messages length: {len(messages)}")

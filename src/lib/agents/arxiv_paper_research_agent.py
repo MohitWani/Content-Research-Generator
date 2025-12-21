@@ -3,6 +3,11 @@ ArXiv Paper Research Agent
 Deep research agent specialized for ArXiv paper analysis
 Generates enhanced research with paper-specific sections and blog generation
 Maps to: spec.md → Stories 1-8, FR1-FR10 | plan.md → T007, T009, T011, T012
+
+LangChain v1.1.0 Compatibility:
+- Uses langchain-core>=1.1.5 for message types
+- HumanMessage and SystemMessage are stable in v1.x
+- No breaking changes from v1.0 to v1.1
 """
 from typing import Dict, Any, List, Optional
 from dataclasses import dataclass, field
@@ -10,7 +15,7 @@ from datetime import datetime
 import json
 from pathlib import Path
 
-from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_core.messages import HumanMessage, SystemMessage, BaseMessage
 
 from src.lib.llm.model import BedrockLLM
 from src.lib.llm.prompts import prompts

@@ -1,12 +1,19 @@
 """
-AWS Bedrock LLM integration using LangChain
+AWS Bedrock LLM integration using LangChain v1.1.0+
 Maps to: plan.md → Technology Decisions (AWS Bedrock)
+
+LangChain v1.1.0 Compatibility:
+- Uses langchain-core>=1.1.5 for message types and parsers
+- Uses langchain-aws>=1.0.0 for ChatBedrock
+- AIMessage.content is the standard way to access response content
+- New: Model Profiles available via .profile attribute
+- New: Model Retry Middleware for automatic retries
 """
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 import boto3
 from langchain_aws import ChatBedrock
-from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
+from langchain_core.messages import HumanMessage, SystemMessage, AIMessage, BaseMessage
 from langchain_core.output_parsers import JsonOutputParser, StrOutputParser
 
 from src.common.config import config
@@ -91,7 +98,7 @@ class BedrockLLM:
         prompt: str,
         system_prompt: Optional[str] = None,
         parse_json: bool = False,
-    ) -> Dict[str, Any] | str:
+    ) -> Union[Dict[str, Any], str]:
         """
         Invoke the LLM asynchronously
         
@@ -137,7 +144,7 @@ class BedrockLLM:
         messages: List[Dict[str, str]],
         system_prompt: Optional[str] = None,
         parse_json: bool = False,
-    ) -> Dict[str, Any] | str:
+    ) -> Union[Dict[str, Any], str]:
         """
         Invoke LLM with conversation history
         
@@ -183,7 +190,7 @@ class BedrockLLM:
         prompt: str,
         system_prompt: Optional[str] = None,
         parse_json: bool = False,
-    ) -> Dict[str, Any] | str:
+    ) -> Union[Dict[str, Any], str]:
         """
         Synchronous invoke for CLI commands
         
