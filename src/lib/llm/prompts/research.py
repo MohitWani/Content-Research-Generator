@@ -52,7 +52,7 @@ You MUST respond with ONLY a valid JSON object. No markdown, no code blocks, no 
 
 Required JSON structure:
 {
-    "topic_summary": "Comprehensive 2000-3000 word summary covering all key aspects",
+    "topic_summary": "Comprehensive 1000-2000 word summary covering all key aspects",
     "key_concepts": {
         "concept_name": "Clear, detailed explanation",
         "another_concept": "Another detailed explanation"
@@ -86,7 +86,7 @@ Adapt your research based on target audience:
 - **Practitioner**: Balance theory with practical implementation details
 - **Expert**: Include cutting-edge research, advanced techniques, mathematical rigor
 
-Begin research systematically. Think step by step. Remember to return ONLY valid JSON."""
+Begin research systematically. Think step by step. Remember to return ONLY required JSON structure."""
 
     def system_prompt(self, **kwargs) -> str:
         return self.SYSTEM_TEMPLATE
