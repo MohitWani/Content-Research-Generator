@@ -1,0 +1,35 @@
+#!/bin/bash
+
+# Run format check (black) and lint (ruff) only on staged Python files
+
+echo "Running pre-commit checks..."
+
+# Activate Python virtual environment
+if [ -f .venv/bin/activate ]; then
+  source .venv/bin/activate
+fi
+
+echo "Activated Python virtual environment."
+
+# Get list of staged .py files
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep '\.py$')
+
+if [ -z "$STAGED_FILES" ]; then
+    echo "No Python files staged for commit."
+    exit 0
+fi
+
+PASS=true
+
+# Run ruff
+echo "Running ruff..."
+ruff check . || PASS=false
+
+if ! $PASS; then
+    echo ""
+    echo "❌ Commit aborted. Fix the above issues and try again."
+    exit 1
+fi
+
+echo "✅ All pre-commit checks passed!"
+exit 0
