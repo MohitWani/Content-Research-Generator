@@ -19,10 +19,12 @@ ENV PYTHONUNBUFFERED=1
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
     build-essential \
+    libpq-dev \
     libicu-dev \
     ca-certificates \
     curl \
     dos2unix \
+    postgresql-client \
     && rm -rf /var/lib/apt/lists/*
 
 RUN update-ca-certificates
@@ -38,15 +40,15 @@ ENV PATH="/root/.local/bin:$PATH"
 # Confirm uv is installed
 RUN uv --version
 
-# Copy rest of the project
-COPY requirements/ requirements/
+# Copy dependency files
+COPY pyproject.toml uv.lock ./
 
-# Use uv to install dependencies
-RUN uv pip install --system --no-cache-dir -r requirements/requirements.txt
+# Install dependencies using uv
+RUN uv sync --frozen --no-dev
 
-# Copy app
+# Copy application code
 COPY ./app ./app
-COPY ./custom_tools ./custom_tools
+COPY ./database ./database
 COPY ./migrations ./migrations
 COPY ./alembic.ini ./alembic.ini
 COPY ./main.py ./main.py

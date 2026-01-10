@@ -1,9 +1,10 @@
 """
 Research API Routes
 """
+import asyncio
 from typing import List, Optional
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -21,27 +22,133 @@ from app.modules.research.schemas.research_schemas import (
 )
 from app.modules.research.services.agentic_researcher import AgenticResearcher
 from app.modules.research.services.topic_agent import TopicAgent
-from database.database import get_db
+from database.database import get_db, SessionLocal
 
 router = APIRouter()
 
 
-@router.post('/query', response_model=ResearchQueryResponse)
+def run_research_background_task(
+    query_id: int,
+    query_text: str,
+    target_audience: str,
+    content_type: str,
+):
+    """
+    Background task to run the agentic research flow.
+    Uses asyncio.run() to execute async workflow in sync background task.
+    """
+    asyncio.run(
+        _execute_research_workflow(query_id, query_text, target_audience, content_type)
+    )
+
+
+async def _execute_research_workflow(
+    query_id: int,
+    query_text: str,
+    target_audience: str,
+    content_type: str,
+):
+    """Execute the full research workflow asynchronously"""
+    db = SessionLocal()
+    try:
+        # Step 1: Update status to processing
+        query_record = db.get(ResearchQuery, query_id)
+        if not query_record:
+            logger.error(f'Query record not found: {query_id}')
+            return
+
+        query_record.status = 'processing'
+        db.commit()
+
+        # Step 2: Categorize the query
+        topic_agent = TopicAgent()
+        categorization = await topic_agent.categorize_query(query_text)
+
+        category_map = {
+            'core_ai': TopicCategory.CORE_AI,
+            'practical_implementation': TopicCategory.PRACTICAL_IMPLEMENTATION,
+            'software_development': TopicCategory.SOFTWARE_DEVELOPMENT,
+            'web_development': TopicCategory.WEB_DEVELOPMENT,
+            'devops': TopicCategory.DEVOPS,
+            'general_tech': TopicCategory.GENERAL_TECH,
+        }
+        topic_category = category_map.get(
+            categorization.category, TopicCategory.GENERAL_TECH
+        )
+
+        # Update query with category
+        query_record.topic_category = topic_category.value
+        db.commit()
+
+        logger.info(f'Query {query_id} categorized as: {topic_category.value}')
+
+        # Step 3: Run agentic research
+        researcher = AgenticResearcher(max_iterations=5)
+        research_output = await researcher.research(
+            query=query_text,
+            category=topic_category,
+            target_audience=target_audience,
+        )
+
+        # Step 4: Persist research result
+        research_result = ResearchResult(
+            query_id=query_id,
+            topic_summary=research_output.topic_summary,
+            key_concepts=research_output.key_concepts,
+            mathematical_foundations=research_output.mathematical_foundations,
+            historical_context=research_output.source_descriptions,
+            implementation_examples=research_output.implementation_examples,
+            sources=research_output.sources,
+            completeness_score=research_output.completeness_score,
+            research_data_path=research_output.research_data_path,
+        )
+        db.add(research_result)
+
+        # Step 5: Update query status to completed
+        query_record.status = 'completed'
+        db.commit()
+
+        logger.info(f'Background research completed: query_id={query_id}')
+
+    except Exception as e:
+        logger.error(f'Background research failed for query {query_id}: {e}', exc_info=True)
+        # Update status to failed
+        try:
+            query_record = db.get(ResearchQuery, query_id)
+            if query_record:
+                query_record.status = 'failed'
+                db.commit()
+        except Exception:
+            pass
+    finally:
+        db.close()
+
+
+@router.post(
+    '/query',
+    response_model=ResearchQueryResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+)
 async def create_research_query(
     request: ResearchQueryRequest,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
 ):
-    """Create a new research query"""
+    """
+    Create a new research query and trigger background research.
+    
+    Returns 202 Accepted with query_id. Use GET /query/{query_id} to check status.
+    """
     try:
+        target_audience = (
+            request.target_audience.value if request.target_audience else 'practitioner'
+        )
+        content_type = request.content_type.value if request.content_type else 'blog'
+
         query_record = ResearchQuery(
             query_text=request.query,
-            target_audience=request.target_audience.value
-            if request.target_audience
-            else 'practitioner',
-            content_type=request.content_type.value
-            if request.content_type
-            else 'blog',
+            target_audience=target_audience,
+            content_type=content_type,
             status='pending',
         )
         db.add(query_record)
@@ -49,6 +156,17 @@ async def create_research_query(
         db.refresh(query_record)
 
         logger.info(f'Created research query: {query_record.id}')
+
+        # Add background task to execute research workflow
+        background_tasks.add_task(
+            run_research_background_task,
+            query_id=query_record.id,
+            query_text=request.query,
+            target_audience=target_audience,
+            content_type=content_type,
+        )
+
+        logger.info(f'Queued background research task for query: {query_record.id}')
 
         return ResearchQueryResponse(
             query_id=query_record.id,

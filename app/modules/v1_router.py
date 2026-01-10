@@ -63,4 +63,52 @@ def register_routes_based_on_config() -> APIRouter:
         except ImportError as e:
             logger.warning(f'Paper module not available: {e}')
 
+    # Register content router
+    if 'content' in module_names or 'CONTENT' in module_names:
+        try:
+            from app.modules.content.routers.v1.endpoints import content_router
+
+            v1_router_internal.include_router(
+                content_router, prefix='/content', tags=['Content']
+            )
+            logger.info('Content module registered')
+        except ImportError as e:
+            logger.warning(f'Content module not available: {e}')
+
+    # Register social router
+    if 'social' in module_names or 'SOCIAL' in module_names:
+        try:
+            from app.modules.social.routers.v1.endpoints import social_router
+
+            v1_router_internal.include_router(
+                social_router, prefix='/social', tags=['Social']
+            )
+            logger.info('Social module registered')
+        except ImportError as e:
+            logger.warning(f'Social module not available: {e}')
+
+    # Register branding router
+    if 'branding' in module_names or 'BRANDING' in module_names:
+        try:
+            from app.modules.branding.routers.v1.endpoints import branding_router
+
+            v1_router_internal.include_router(
+                branding_router, prefix='/branding', tags=['Branding']
+            )
+            logger.info('Branding module registered')
+        except ImportError as e:
+            logger.warning(f'Branding module not available: {e}')
+
+    # Register pipelines router
+    if 'pipelines' in module_names or 'PIPELINES' in module_names:
+        try:
+            from app.modules.pipelines.routers.v1.endpoints import pipelines_router
+
+            v1_router_internal.include_router(
+                pipelines_router, prefix='/pipelines', tags=['Pipelines']
+            )
+            logger.info('Pipelines module registered')
+        except ImportError as e:
+            logger.warning(f'Pipelines module not available: {e}')
+
     return v1_router_internal

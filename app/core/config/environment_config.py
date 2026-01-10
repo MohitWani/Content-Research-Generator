@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     DATABASE_URL_SYNC: str = 'postgresql://postgres:postgres@localhost:5432/research_db'
 
     # Module enable
-    MODULE_NAMES: str = "['health', 'user', 'auth', 'research', 'paper']"
+    MODULE_NAMES: str = "['health', 'user', 'auth', 'research', 'paper', 'content', 'social', 'branding', 'pipelines']"
 
     # DB Migration
     ENABLE_DB_MIGRATIONS: bool = False
@@ -35,8 +35,8 @@ class Settings(BaseSettings):
     # Rate Limiter
     RATE_LIMIT_CONFIG: str = '{"global": {"counts": 60, "time": 60}}'
 
-    # Public Paths (includes all research and paper endpoints for testing)
-    PUBLIC_ENDPOINTS: str = '[{"endpoint":"/docs","method":"GET"},{"endpoint":"/redoc","method":"GET"},{"endpoint":"/openapi.json","method":"GET"},{"endpoint":"/api/v1/user","method":"POST"},{"endpoint":"/api/v1/auth/login","method":"POST"},{"endpoint":"/api/v1/auth/refresh","method":"POST"},{"endpoint":"/.well-known/jwks.json","method":"GET"},{"endpoint":"/api/health","method":"GET"},{"endpoint":"/api/v1/research/query","method":"POST"},{"endpoint":"/api/v1/research/query/sync","method":"POST"},{"endpoint":"/api/v1/research/queries","method":"GET"},{"endpoint":"/api/v1/paper/search","method":"POST"},{"endpoint":"/api/v1/paper/research/sync","method":"POST"},{"endpoint":"/api/v1/paper/full/sync","method":"POST"},{"endpoint":"/api/v1/paper/research/multiple/sync","method":"POST"}]'
+    # Public Paths (includes all research, paper, content endpoints for testing)
+    PUBLIC_ENDPOINTS: str = '[{"endpoint":"/docs","method":"GET"},{"endpoint":"/redoc","method":"GET"},{"endpoint":"/openapi.json","method":"GET"},{"endpoint":"/api/v1/user","method":"POST"},{"endpoint":"/api/v1/auth/login","method":"POST"},{"endpoint":"/api/v1/auth/refresh","method":"POST"},{"endpoint":"/.well-known/jwks.json","method":"GET"},{"endpoint":"/api/health","method":"GET"},{"endpoint":"/api/v1/research/query","method":"POST"},{"endpoint":"/api/v1/research/query/sync","method":"POST"},{"endpoint":"/api/v1/research/queries","method":"GET"},{"endpoint":"/api/v1/paper/search","method":"POST"},{"endpoint":"/api/v1/paper/research/sync","method":"POST"},{"endpoint":"/api/v1/paper/full/sync","method":"POST"},{"endpoint":"/api/v1/paper/research/multiple/sync","method":"POST"},{"endpoint":"/api/v1/content/generate-blog","method":"POST"},{"endpoint":"/api/v1/content/generate-blog/sync","method":"POST"},{"endpoint":"/api/v1/content/full-pipeline","method":"POST"},{"endpoint":"/api/v1/content/","method":"GET"},{"endpoint":"/api/v1/social/linkedin","method":"POST"},{"endpoint":"/api/v1/social/twitter/thread","method":"POST"},{"endpoint":"/api/v1/social/from-blog","method":"POST"},{"endpoint":"/api/v1/branding/apply","method":"POST"},{"endpoint":"/api/v1/branding/check-alignment","method":"POST"},{"endpoint":"/api/v1/branding/voice-profile","method":"GET"},{"endpoint":"/api/v1/branding/guidelines","method":"GET"},{"endpoint":"/api/v1/pipelines/full","method":"POST"},{"endpoint":"/api/v1/pipelines/full/async","method":"POST"},{"endpoint":"/api/v1/pipelines/research-only","method":"POST"}]'
 
     # Public and Private Keys
     PRIVATE_KEY: str = ''

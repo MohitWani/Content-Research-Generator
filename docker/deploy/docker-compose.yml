@@ -1,9 +1,9 @@
 version: '3.8'
 
 services:
-  python-fast-api-seeds-app:
-    image: ai-services-${ENV_NAME}:${APP_VERSION}
-    container_name: python-fast-api-seeds-app-${ENV_NAME}
+  app:
+    image: ai-research-agent-${ENV_NAME}:${APP_VERSION}
+    container_name: ai-research-agent-${ENV_NAME}
     build:
       context: ../../
       dockerfile: docker/deploy/Dockerfile
@@ -15,27 +15,54 @@ services:
       - "${APP_PORT}:${APP_PORT}"
     env_file:
       - ../../.env
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/research_db
     volumes:
       - ../../volumes/${ENV_NAME}/logs:/app/logs
       - ../../volumes/${ENV_NAME}/data:/app/data
-      - ../../volumes/${ENV_NAME}/data/uploads:/app/uploads
     restart: unless-stopped
     command: >
-      uvicorn main:app --host 0.0.0.0 --port ${APP_PORT} --workers 2
+      uv run uvicorn main:app --host 0.0.0.0 --port ${APP_PORT} --workers 2
     logging:
       driver: "json-file"
       options:
         max-size: "10m"
         max-file: "3"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:${APP_PORT}/api/health/ai-service"]
+      test: ["CMD", "curl", "-f", "http://localhost:${APP_PORT}/api/health"]
       interval: 30s
       timeout: 10s
       retries: 3
     networks:
-      - python-fast-api-seeds-app-network
+      - research-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: postgres-${ENV_NAME}
+    ports:
+      - "5432:5432"
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: research_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d research_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - research-network
+
+volumes:
+  postgres_data:
 
 networks:
-  python-fast-api-seeds-app-network:
-    name: ${ENV_NAME}-network
+  research-network:
+    name: ${ENV_NAME}-research-network
     driver: bridge

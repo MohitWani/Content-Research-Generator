@@ -1,7 +1,7 @@
 services:
-  python-fast-api-seeds-app:
-    image: ai-services-${ENV_NAME}:${APP_VERSION}
-    container_name: python-fast-api-seeds-app-${ENV_NAME}
+  app:
+    image: ai-research-agent-${ENV_NAME}:${APP_VERSION}
+    container_name: ai-research-agent-${ENV_NAME}
     build:
       context: ../../
       dockerfile: docker/local/Dockerfile
@@ -11,45 +11,58 @@ services:
         - APP_PORT=${APP_PORT}
     ports:
       - "${APP_PORT}:${APP_PORT}"
-      - "5678:5678"  # <== debugpy
+      - "5678:5678"  # debugpy
     env_file:
       - ../../.env
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/research_db
     volumes:
       - ../../volumes/${ENV_NAME}/logs:/app/logs
       - ../../volumes/${ENV_NAME}/data:/app/data
-      - ../../volumes/${ENV_NAME}/data/uploads:/app/uploads
       - ../../:/app/
     restart: unless-stopped
     command: >
-      python -m debugpy --listen 0.0.0.0:5678 --wait-for-client -m uvicorn main:app --host 0.0.0.0 --port ${APP_PORT} --reload
+      uv run uvicorn main:app --host 0.0.0.0 --port ${APP_PORT} --reload
     logging:
       driver: "json-file"
       options:
         max-size: "10m"
         max-file: "3"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:${APP_PORT}/api/health/ai-service"]
+      test: ["CMD", "curl", "-f", "http://localhost:${APP_PORT}/api/health"]
       interval: 30s
       timeout: 10s
       retries: 3
     networks:
-      - python-fast-api-seeds-app-network
+      - research-network
+    depends_on:
+      postgres:
+        condition: service_healthy
 
-  mysql:
-    image: mysql:8.0
-    container_name: mysql-${ENV_NAME}
+  postgres:
+    image: postgres:15-alpine
+    container_name: postgres-${ENV_NAME}
     ports:
-      - "3307:3306"
+      - "5432:5432"
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: Admin
-      MYSQL_DATABASE: ai_services_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: research_db
     volumes:
-      - ~/docker-volumes/${ENV_NAME}/mysql_data:/var/lib/mysql
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d research_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     networks:
-      - python-fast-api-seeds-app-network
+      - research-network
+
+volumes:
+  postgres_data:
 
 networks:
-  python-fast-api-seeds-app-network:
-    name: ${ENV_NAME}-network
+  research-network:
+    name: ${ENV_NAME}-research-network
     driver: bridge
