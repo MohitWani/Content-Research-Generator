@@ -1,7 +1,7 @@
 """
 Topic categorization prompts
 """
-from app.core.llm.prompts.base import BasePrompt
+from app.modules.research.services.prompts.base import BasePrompt
 
 
 class TopicCategorizationPrompt(BasePrompt):
@@ -50,9 +50,17 @@ IMPORTANT: Return ONLY the JSON object."""
 Return ONLY valid JSON with category, confidence, reasoning, and is_ai_related."""
 
     def system_prompt(self, **kwargs) -> str:
+        """Return the system prompt for topic categorization"""
         return self.SYSTEM_TEMPLATE
 
     def user_prompt(self, query: str, **kwargs) -> str:
+        """
+        Return the user prompt for topic categorization.
+        
+        Args:
+            query: The query to categorize
+            
+        Returns:
+            Formatted user prompt
+        """
         return self.format(self.USER_TEMPLATE, query=query)
-
-

@@ -65,6 +65,7 @@ class AgenticResearcher:
         query: str,
         category: TopicCategory,
         target_audience: str = "practitioner",
+        content_type: str = "blog",
     ) -> ResearchOutput:
         """
         Execute research using the agent.
@@ -73,12 +74,13 @@ class AgenticResearcher:
             query: Research query
             category: Topic category
             target_audience: Target audience for the research
+            content_type: Type of content (blog or linkedin)
             
         Returns:
             ResearchOutput with research results
         """
         logger.info(
-            f"[RESEARCH] Query: '{query[:60]}...' | Category: {category.value}"
+            f"[RESEARCH] Query: '{query[:60]}...' | Category: {category.value} | Content: {content_type}"
         )
 
         try:
@@ -87,6 +89,7 @@ class AgenticResearcher:
                 query=query,
                 category=category,
                 target_audience=target_audience,
+                content_type=content_type,
             )
 
             # Save research data

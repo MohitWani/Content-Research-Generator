@@ -1,7 +1,7 @@
 """
 Research prompts for the Agentic Research Agent
 """
-from app.core.llm.prompts.base import BasePrompt
+from app.modules.research.services.prompts.base import BasePrompt
 
 
 class ResearchPrompt(BasePrompt):
@@ -60,6 +60,7 @@ IMPORTANT: Return ONLY the JSON object. Any other format will cause a parsing er
 
 **Category**: {category}
 **Target Audience**: {target_audience}
+**Content Type**: {content_type}
 **Maximum Tool Calls**: {max_iterations}
 
 ## Category-Specific Strategy
@@ -73,89 +74,49 @@ Adapt your research based on target audience:
 - **Practitioner**: Balance theory with practical implementation details
 - **Expert**: Include cutting-edge research, advanced techniques, mathematical rigor
 
+## Output Length Guidelines
+
+Adjust research depth and summary length based on content type:
+- **blog**: Comprehensive research summary, detailed explanations, code examples, mathematical foundations, and implementation examples.
+- **linkedin_post**: Focused research with 300-500 word summary, key highlights only, concise insights, do not include the Mathematical Foundations and Implementation Examples in the Output.
+
 Begin research systematically. Think step by step. Remember to return ONLY required JSON structure."""
 
     def system_prompt(self, **kwargs) -> str:
+        """Return the system prompt for research agent"""
         return self.SYSTEM_TEMPLATE
 
     def user_prompt(
         self,
         query: str,
-        category: str = 'core_ai',
-        category_guidelines: str = '',
-        target_audience: str = 'practitioner',
+        category: str = "core_ai",
+        category_guidelines: str = "",
+        target_audience: str = "practitioner",
+        content_type: str = "blog",
         max_iterations: int = 5,
         **kwargs,
     ) -> str:
+        """
+        Return the user prompt for research agent.
+        
+        Args:
+            query: The research query
+            category: Topic category
+            category_guidelines: Category-specific guidelines
+            target_audience: Target audience level
+            content_type: Type of content (blog or linkedin)
+            max_iterations: Maximum tool calls allowed
+            
+        Returns:
+            Formatted user prompt
+        """
         return self.format(
             self.USER_TEMPLATE,
             query=query,
             category=category,
             category_guidelines=category_guidelines,
             target_audience=target_audience,
+            content_type=content_type,
             max_iterations=max_iterations,
         )
-
-
-class SynthesisPrompt(BasePrompt):
-    """Prompts for research synthesis"""
-
-    SYSTEM_TEMPLATE = """You are an expert research synthesizer.
-
-## Your Role
-Transform raw research data into well-structured, comprehensive reports.
-
-## Synthesis Guidelines
-1. **Accuracy**: Only include verified information from sources
-2. **Completeness**: Cover all required sections thoroughly
-3. **Clarity**: Write for the specified target audience
-4. **Structure**: Organize logically with clear sections
-5. **Attribution**: Reference sources appropriately
-
-## STRICT OUTPUT REQUIREMENT
-
-You MUST respond with ONLY a valid JSON object. No markdown, no code blocks, no explanatory text.
-
-Required JSON structure:
-{
-    "topic_summary": "Comprehensive 2000-3000 word summary",
-    "key_concepts": {
-        "concept": "detailed explanation"
-    },
-    "mathematical_foundations": "Formulas and theory (or null)",
-    "implementation_examples": "Code examples (or null)"
-}
-
-IMPORTANT: Return ONLY the JSON object. Any other format will cause a parsing error."""
-
-    USER_TEMPLATE = """## Synthesis Task
-
-**Topic**: {query}
-**Category**: {category}
-**Target Audience**: {target_audience}
-
-## Sources Collected
-{sources_summary}
-
-Create a comprehensive research report. Return ONLY valid JSON."""
-
-    def system_prompt(self, **kwargs) -> str:
-        return self.SYSTEM_TEMPLATE
-
-    def user_prompt(
-        self,
-        query: str,
-        category: str,
-        target_audience: str,
-        sources_summary: str = '',
-        **kwargs,
-    ) -> str:
-        return self.format(
-            self.USER_TEMPLATE,
-            query=query,
-            category=category,
-            target_audience=target_audience,
-            sources_summary=sources_summary,
-        )
-
 

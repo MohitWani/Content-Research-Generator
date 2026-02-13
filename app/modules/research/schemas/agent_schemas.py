@@ -91,9 +91,9 @@ class AgentConfig(BaseModel):
     """Configuration for the research agent"""
 
     max_iterations: int = Field(
-        default=10,
+        default=5,
         ge=1,
-        le=50,
+        le=25,
         description="Maximum number of agent iterations",
     )
     recursion_limit: int = Field(

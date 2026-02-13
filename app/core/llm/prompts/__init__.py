@@ -1,5 +1,9 @@
 """
 Prompt classes for AI Research Agent System
+
+Note: Research-related prompts (ResearchPrompt, TopicCategorizationPrompt)
+have been moved to app.modules.research.services.prompts for better module separation.
+They are re-exported here for backward compatibility.
 """
 from dataclasses import dataclass
 
@@ -7,9 +11,13 @@ from app.core.llm.prompts.base import BasePrompt
 from app.core.llm.prompts.blog import BlogPrompt
 from app.core.llm.prompts.branding import BrandingPrompt
 from app.core.llm.prompts.paper import PaperBlogPrompt, PaperResearchPrompt
-from app.core.llm.prompts.research import ResearchPrompt, SynthesisPrompt
 from app.core.llm.prompts.social import LinkedInPostPrompt, TwitterThreadPrompt
-from app.core.llm.prompts.topic import TopicCategorizationPrompt
+
+# Import research prompts from their new location
+from app.modules.research.services.prompts import (
+    ResearchPrompt,
+    TopicCategorizationPrompt,
+)
 
 
 @dataclass
@@ -17,7 +25,6 @@ class PromptRegistry:
     """Registry of all available prompts"""
 
     research: ResearchPrompt = None
-    synthesis: SynthesisPrompt = None
     topic: TopicCategorizationPrompt = None
     blog: BlogPrompt = None
     linkedin: LinkedInPostPrompt = None
@@ -28,7 +35,6 @@ class PromptRegistry:
 
     def __post_init__(self):
         self.research = ResearchPrompt()
-        self.synthesis = SynthesisPrompt()
         self.topic = TopicCategorizationPrompt()
         self.blog = BlogPrompt()
         self.linkedin = LinkedInPostPrompt()
@@ -45,7 +51,6 @@ prompts = PromptRegistry()
 __all__ = [
     'BasePrompt',
     'ResearchPrompt',
-    'SynthesisPrompt',
     'TopicCategorizationPrompt',
     'BlogPrompt',
     'LinkedInPostPrompt',

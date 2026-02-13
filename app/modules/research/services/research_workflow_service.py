@@ -14,19 +14,9 @@ from app.modules.research.repositories.research_repository import (
     ResearchQueryRepository,
     ResearchResultRepository,
 )
+from app.modules.research.schemas.agent_schemas import ResearchOutput
 from app.modules.research.services.agentic_researcher import AgenticResearcher
-from app.modules.research.services.topic_agent import TopicAgent
-
-
-# Category mapping for topic categorization
-CATEGORY_MAP = {
-    "core_ai": TopicCategory.CORE_AI,
-    "practical_implementation": TopicCategory.PRACTICAL_IMPLEMENTATION,
-    "software_development": TopicCategory.SOFTWARE_DEVELOPMENT,
-    "web_development": TopicCategory.WEB_DEVELOPMENT,
-    "devops": TopicCategory.DEVOPS,
-    "general_tech": TopicCategory.GENERAL_TECH,
-}
+from app.modules.research.services.nodes import TopicAgentNode
 
 
 class ResearchWorkflowService:
@@ -36,14 +26,21 @@ class ResearchWorkflowService:
     """
 
     def __init__(self, db: Session):
+        """
+        Initialize the research workflow service.
+        
+        Args:
+            db: Database session
+        """
         self.db = db
         self.query_repository = ResearchQueryRepository(db)
         self.result_repository = ResearchResultRepository(db)
-        self.topic_agent = TopicAgent()
+        self.topic_agent_node = TopicAgentNode()
+        logger.info("ResearchWorkflowService initialized")
 
     async def categorize_query(self, query_text: str) -> TopicCategory:
         """
-        Categorize a research query using the topic agent.
+        Categorize a research query using the topic agent node.
         
         Args:
             query_text: The query text to categorize
@@ -51,11 +48,9 @@ class ResearchWorkflowService:
         Returns:
             The determined TopicCategory
         """
-        categorization = await self.topic_agent.categorize_query(query_text)
-        topic_category = CATEGORY_MAP.get(
-            categorization.category, TopicCategory.GENERAL_TECH
-        )
-        logger.info(f"Query categorized as: {topic_category.value}")
+        logger.info(f"[WORKFLOW] Categorizing query: {query_text[:50]}...")
+        topic_category = await self.topic_agent_node.categorize(query_text)
+        logger.info(f"[WORKFLOW] Query categorized as: {topic_category.value}")
         return topic_category
 
     async def execute_research(
@@ -64,7 +59,7 @@ class ResearchWorkflowService:
         topic_category: TopicCategory,
         target_audience: str,
         max_iterations: int = 5,
-    ) -> "ResearchOutput":
+    ) -> ResearchOutput:
         """
         Execute the agentic research process.
         
@@ -77,17 +72,25 @@ class ResearchWorkflowService:
         Returns:
             ResearchOutput from the agentic researcher
         """
+        logger.info(
+            f"[WORKFLOW] Executing research: category={topic_category.value}, "
+            f"audience={target_audience}, max_iterations={max_iterations}"
+        )
         researcher = AgenticResearcher(max_iterations=max_iterations)
-        return await researcher.research(
+        result = await researcher.research(
             query=query_text,
             category=topic_category,
             target_audience=target_audience,
         )
+        logger.info(
+            f"[WORKFLOW] Research execution completed: score={result.completeness_score:.2f}"
+        )
+        return result
 
     def create_research_result(
         self,
         query_id: int,
-        research_output: "ResearchOutput",
+        research_output: ResearchOutput,
     ) -> ResearchResult:
         """
         Create a ResearchResult from research output.
@@ -99,6 +102,7 @@ class ResearchWorkflowService:
         Returns:
             The created ResearchResult (not yet committed)
         """
+        logger.debug(f"[WORKFLOW] Creating ResearchResult for query_id: {query_id}")
         return ResearchResult(
             query_id=query_id,
             topic_summary=research_output.topic_summary,
@@ -128,16 +132,20 @@ class ResearchWorkflowService:
         Returns:
             The created ResearchResult
         """
+        logger.info(f"[WORKFLOW] Starting full workflow for query_id: {query_record.id}")
+
         # Step 1: Categorize the query
+        logger.info(f"[WORKFLOW] Step 1: Categorizing query for query_id: {query_record.id}")
         topic_category = await self.categorize_query(query_text)
 
         # Step 2: Update query with category
+        logger.info(f"[WORKFLOW] Step 2: Updating category for query_id: {query_record.id}")
         query_record.topic_category = topic_category.value
         self.query_repository.commit()
-
-        logger.info(f"Query {query_record.id} categorized as: {topic_category.value}")
+        logger.info(f"[WORKFLOW] Query {query_record.id} categorized as: {topic_category.value}")
 
         # Step 3: Execute research
+        logger.info(f"[WORKFLOW] Step 3: Executing research for query_id: {query_record.id}")
         research_output = await self.execute_research(
             query_text=query_text,
             topic_category=topic_category,
@@ -145,6 +153,7 @@ class ResearchWorkflowService:
         )
 
         # Step 4: Create and persist research result
+        logger.info(f"[WORKFLOW] Step 4: Persisting result for query_id: {query_record.id}")
         research_result = self.create_research_result(
             query_id=query_record.id,
             research_output=research_output,
@@ -152,14 +161,14 @@ class ResearchWorkflowService:
         self.result_repository.add_without_commit(research_result)
 
         # Step 5: Update query status and commit
+        logger.info(f"[WORKFLOW] Step 5: Finalizing workflow for query_id: {query_record.id}")
         query_record.status = "completed"
         self.query_repository.commit()
         self.result_repository.refresh(research_result)
 
-        logger.info(f"Research workflow completed: query_id={query_record.id}")
+        logger.info(
+            f"[WORKFLOW] Full workflow completed for query_id: {query_record.id}, "
+            f"result_id: {research_result.id}"
+        )
 
         return research_result
-
-
-# Import for type hints
-from app.modules.research.services.agentic_researcher import ResearchOutput  # noqa: E402

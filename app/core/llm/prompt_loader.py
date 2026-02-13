@@ -8,7 +8,6 @@ from app.core.llm.prompts import (
     PaperBlogPrompt,
     PaperResearchPrompt,
     ResearchPrompt,
-    SynthesisPrompt,
     TopicCategorizationPrompt,
     TwitterThreadPrompt,
     prompts,
@@ -119,11 +118,6 @@ def get_category_requirements(category: str) -> str:
 def get_research_prompts() -> ResearchPrompt:
     """Get the research prompt class instance"""
     return prompts.research
-
-
-def get_synthesis_prompts() -> SynthesisPrompt:
-    """Get the synthesis prompt class instance"""
-    return prompts.synthesis
 
 
 def get_topic_prompts() -> TopicCategorizationPrompt:

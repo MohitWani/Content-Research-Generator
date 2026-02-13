@@ -16,16 +16,16 @@ def create_tavily_tool() -> Optional[BaseTool]:
     Create Tavily web search tool.
     
     Returns:
-        TavilySearchResults tool if API key is configured, None otherwise
+        TavilySearch tool if API key is configured, None otherwise
     """
     if not settings.TAVILY_API_KEY:
         logger.warning("Tavily API key not configured, skipping web search tool")
         return None
 
     try:
-        from langchain_community.tools.tavily_search import TavilySearchResults
+        from langchain_tavily import TavilySearch
 
-        tool = TavilySearchResults(
+        tool = TavilySearch(
             max_results=5,
             search_depth="advanced",
             include_answer=True,
