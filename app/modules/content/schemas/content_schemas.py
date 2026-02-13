@@ -7,25 +7,6 @@ from typing import List, Optional
 from pydantic import BaseModel, Field
 
 
-class BlogGenerateRequest(BaseModel):
-    """Request schema for blog generation"""
-
-    query: str = Field(
-        ...,
-        description='Research query or topic for blog generation',
-        min_length=5,
-        max_length=1000,
-    )
-    target_audience: str = Field(
-        default='practitioner',
-        description='Target audience (beginner, practitioner, expert)',
-    )
-    tone: str = Field(
-        default='professional',
-        description='Writing tone (professional, conversational, technical)',
-    )
-
-
 class BlogResponse(BaseModel):
     """Response schema for blog generation"""
 
@@ -57,3 +38,22 @@ class BlogFromResearchRequest(BaseModel):
     research_query_id: int = Field(..., description='Research query ID')
     target_audience: str = Field(default='practitioner', description='Target audience')
     tone: str = Field(default='professional', description='Writing tone')
+
+
+class BlogGenerationResponse(BlogStatusResponse):
+    """Response for async blog generation"""
+    pass
+
+
+class BlogContentResponse(BlogResponse):
+    """Full blog content response with metadata"""
+
+    id: int = Field(..., description='Content item ID')
+    research_query_id: int = Field(..., description='Research query ID')
+    content_type: str = Field(..., description='Content type')
+    target_audience: Optional[str] = Field(None, description='Target audience')
+    tone: Optional[str] = Field(None, description='Writing tone')
+    status: str = Field(..., description='Content status')
+
+    class Config:
+        from_attributes = True

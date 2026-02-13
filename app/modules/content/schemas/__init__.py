@@ -1,8 +1,16 @@
 """Content Schemas"""
 from app.modules.content.schemas.content_schemas import (
-    BlogGenerateRequest,
+    BlogContentResponse,
+    BlogFromResearchRequest,
+    BlogGenerationResponse,
     BlogResponse,
     BlogStatusResponse,
 )
 
-__all__ = ['BlogGenerateRequest', 'BlogResponse', 'BlogStatusResponse']
+__all__ = [
+    'BlogContentResponse',
+    'BlogFromResearchRequest',
+    'BlogGenerationResponse',
+    'BlogResponse',
+    'BlogStatusResponse',
+]
