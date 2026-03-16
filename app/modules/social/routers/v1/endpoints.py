@@ -1,198 +1,110 @@
 """
 Social API Routes
-LinkedIn and Twitter/X content generation endpoints
-"""
-from typing import Dict, List, Optional
 
-from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel, Field
+This module contains only API endpoint definitions for LinkedIn.
+Business logic is handled by the SocialService.
+"""
+from fastapi import APIRouter, Depends, HTTPException
 
 from app.core.logging.logger import logger
-from app.modules.social.services import (
-    LinkedInOutput,
-    ShortformAgent,
-    ThreadOutput,
-    ThreadPost,
-    get_shortform_agent,
+from sqlalchemy.orm import Session
+
+from app.modules.social.schemas.social_schemas import (
+    LinkedInFromBlogRequest,
+    LinkedInFromResearchRequest,
+    LinkedInGenerateRequest,
+    LinkedInResponse,
 )
+from database.database import get_db
+from app.modules.social.services.social_service import SocialService
 
 router = APIRouter()
 
 
-# Request Schemas
-class LinkedInGenerateRequest(BaseModel):
-    """Request for LinkedIn post generation"""
-
-    topic: str = Field(..., min_length=5, max_length=500)
-    content: str = Field(..., min_length=50, max_length=8000)
-    target_audience: str = Field(default='practitioner')
+def get_social_service(db: Session = Depends(get_db)) -> SocialService:
+    """Dependency to get SocialService instance"""
+    return SocialService(db=db)
 
 
-class TwitterThreadRequest(BaseModel):
-    """Request for Twitter thread generation"""
-
-    topic: str = Field(..., min_length=5, max_length=500)
-    content: str = Field(..., min_length=50, max_length=8000)
-    max_posts: int = Field(default=5, ge=3, le=15)
-
-
-class SocialFromBlogRequest(BaseModel):
-    """Request to generate social content from blog"""
-
-    title: str = Field(..., min_length=5, max_length=500)
-    content: str = Field(..., min_length=100)
-    platforms: List[str] = Field(default=['linkedin', 'twitter'])
-
-
-# Response Schemas
-class LinkedInResponse(BaseModel):
-    """Response for LinkedIn post"""
-
-    hook: str
-    content: str
-    hashtags: List[str]
-    call_to_action: str
-    character_count: int
-    file_path: Optional[str] = None
-
-
-class ThreadPostResponse(BaseModel):
-    """Response for single thread post"""
-
-    position: int
-    content: str
-    character_count: int
-
-
-class ThreadResponse(BaseModel):
-    """Response for Twitter thread"""
-
-    posts: List[ThreadPostResponse]
-    topic: str
-    total_posts: int
-    file_path: Optional[str] = None
-
-
-class SocialContentResponse(BaseModel):
-    """Response for combined social content"""
-
-    linkedin: Optional[LinkedInResponse] = None
-    twitter: Optional[ThreadResponse] = None
-
+# ============= API Endpoints =============
 
 @router.post('/linkedin', response_model=LinkedInResponse)
-async def generate_linkedin_post(request: LinkedInGenerateRequest):
+async def generate_linkedin_post(
+    request: LinkedInGenerateRequest,
+    service: SocialService = Depends(get_social_service),
+):
     """
     Generate a LinkedIn post from content.
+    
+    This endpoint creates an engaging LinkedIn post from the provided
+    topic and source content.
     """
     try:
-        agent = get_shortform_agent()
-        result = await agent.generate_linkedin_post(
-            topic=request.topic,
-            content=request.content,
-            target_audience=request.target_audience,
-        )
+        output = await service.generate_linkedin_post(request)
 
-        return LinkedInResponse(
-            hook=result.hook,
-            content=result.content,
-            hashtags=result.hashtags,
-            call_to_action=result.call_to_action,
-            character_count=result.character_count,
-            file_path=result.file_path,
-        )
+        logger.info(f"LinkedIn post generated: {output.character_count} chars")
+
+        return SocialService.to_linkedin_response(output)
 
     except Exception as e:
         logger.error(f'LinkedIn generation failed: {e}', exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post('/twitter/thread', response_model=ThreadResponse)
-async def generate_twitter_thread(request: TwitterThreadRequest):
+@router.post('/linkedin/from-blog', response_model=LinkedInResponse)
+async def generate_linkedin_from_blog(
+    request: LinkedInFromBlogRequest,
+    service: SocialService = Depends(get_social_service),
+):
     """
-    Generate a Twitter/X thread from content.
+    Generate a LinkedIn post from a blog post.
+    
+    This endpoint creates an engaging LinkedIn post from blog content.
     """
     try:
-        agent = get_shortform_agent()
-        result = await agent.generate_twitter_thread(
-            topic=request.topic,
-            content=request.content,
-            max_posts=request.max_posts,
+        output = await service.generate_linkedin_from_blog(
+            blog_title=request.title,
+            blog_content=request.content,
+            target_audience=request.target_audience,
+            user_instructions=request.user_instructions,
         )
 
-        return ThreadResponse(
-            posts=[
-                ThreadPostResponse(
-                    position=p.position,
-                    content=p.content,
-                    character_count=p.character_count,
-                )
-                for p in result.posts
-            ],
-            topic=result.topic,
-            total_posts=result.total_posts,
-            file_path=result.file_path,
-        )
+        logger.info(f"LinkedIn from blog generated: {output.character_count} chars")
+
+        return SocialService.to_linkedin_response(output)
 
     except Exception as e:
-        logger.error(f'Twitter thread generation failed: {e}', exc_info=True)
+        logger.error(f'LinkedIn from blog generation failed: {e}', exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post('/from-blog', response_model=SocialContentResponse)
-async def generate_social_from_blog(request: SocialFromBlogRequest):
+@router.post('/linkedin/from-research', response_model=LinkedInResponse)
+async def generate_linkedin_from_research(
+    request: LinkedInFromResearchRequest,
+    service: SocialService = Depends(get_social_service),
+):
     """
-    Generate social media content from a blog post.
-    Supports both LinkedIn and Twitter/X.
+    Generate a LinkedIn post from research results.
+    
+    This endpoint creates an engaging LinkedIn post from existing
+    research data collected via the research endpoints.
     """
     try:
-        from app.modules.content.services import BlogOutput
-
-        # Create a BlogOutput from the request
-        blog = BlogOutput(
-            title=request.title,
-            content=request.content,
+        output = await service.generate_linkedin_from_research(
+            research_query_id=request.research_query_id,
+            target_audience=request.target_audience,
+            user_instructions=request.user_instructions,
         )
 
-        agent = get_shortform_agent()
-        results = await agent.generate_from_blog(
-            blog=blog,
-            platforms=request.platforms,
-        )
+        logger.info(f"LinkedIn from research generated: {output.character_count} chars")
 
-        response = SocialContentResponse()
+        return SocialService.to_linkedin_response(output)
 
-        if 'linkedin' in results:
-            li = results['linkedin']
-            response.linkedin = LinkedInResponse(
-                hook=li.hook,
-                content=li.content,
-                hashtags=li.hashtags,
-                call_to_action=li.call_to_action,
-                character_count=li.character_count,
-                file_path=li.file_path,
-            )
-
-        if 'twitter' in results:
-            tw = results['twitter']
-            response.twitter = ThreadResponse(
-                posts=[
-                    ThreadPostResponse(
-                        position=p.position,
-                        content=p.content,
-                        character_count=p.character_count,
-                    )
-                    for p in tw.posts
-                ],
-                topic=tw.topic,
-                total_posts=tw.total_posts,
-                file_path=tw.file_path,
-            )
-
-        return response
-
+    except ValueError as e:
+        logger.error(f'Research data not found: {e}')
+        raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
-        logger.error(f'Social content generation failed: {e}', exc_info=True)
+        logger.error(f'LinkedIn from research generation failed: {e}', exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 

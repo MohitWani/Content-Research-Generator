@@ -19,11 +19,11 @@ ENV PYTHONUNBUFFERED=1
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
     build-essential \
-    libpq-dev \
     libicu-dev \
     ca-certificates \
     curl \
     dos2unix \
+    apt-transport-https \
     postgresql-client \
     && rm -rf /var/lib/apt/lists/*
 

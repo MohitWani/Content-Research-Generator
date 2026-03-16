@@ -40,3 +40,11 @@ specs/
 *.log
 .DS_Store
 
+# Large directories
+volumes/
+logs/
+data/
+*.egg-info/
+.ruff_cache/
+.cursor/
+

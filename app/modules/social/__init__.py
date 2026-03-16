@@ -1,19 +1,15 @@
 """
 Social Module
-LinkedIn and Twitter/X content generation functionality
+LinkedIn content generation functionality
 """
 from app.modules.social.services import (
+    LinkedInAgent,
     LinkedInOutput,
-    ShortformAgent,
-    ThreadOutput,
-    ThreadPost,
-    get_shortform_agent,
+    get_linkedin_agent,
 )
 
 __all__ = [
-    'ShortformAgent',
+    'LinkedInAgent',
     'LinkedInOutput',
-    'ThreadOutput',
-    'ThreadPost',
-    'get_shortform_agent',
+    'get_linkedin_agent',
 ]

@@ -30,7 +30,7 @@ class Settings(BaseSettings):
     MODULE_NAMES: str = "['health', 'user', 'auth', 'research', 'paper', 'content', 'social', 'branding', 'pipelines']"
 
     # DB Migration
-    ENABLE_DB_MIGRATIONS: bool = False
+    ENABLE_DB_MIGRATIONS: bool = True
 
     # Rate Limiter
     RATE_LIMIT_CONFIG: str = '{"global": {"counts": 60, "time": 60}}'
@@ -50,7 +50,7 @@ class Settings(BaseSettings):
     AWS_REGION: str = 'us-east-1'
     AWS_ACCESS_KEY_ID: str = ''
     AWS_SECRET_ACCESS_KEY: str = ''
-    BEDROCK_MODEL_ID: str = 'anthropic.claude-3-5-sonnet-20241022-v2:0'
+    BEDROCK_MODEL_ID: str = ''
     BEDROCK_MAX_TOKENS: int = 8000
     BEDROCK_TEMPERATURE: float = 0.7
 

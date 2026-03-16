@@ -25,10 +25,9 @@ from app.modules.research.services import (
     get_topic_agent,
 )
 from app.modules.social.services import (
+    LinkedInAgent,
     LinkedInOutput,
-    ShortformAgent,
-    ThreadOutput,
-    get_shortform_agent,
+    get_linkedin_agent,
 )
 
 
@@ -44,7 +43,7 @@ class PipelineService:
         topic_agent: Optional[TopicAgent] = None,
         researcher: Optional[AgenticResearcher] = None,
         blog_writer: Optional[BlogWriterAgent] = None,
-        shortform_agent: Optional[ShortformAgent] = None,
+        linkedin_agent: Optional[LinkedInAgent] = None,
         branding_agent: Optional[BrandingAgent] = None,
     ):
         """Initialize pipeline service with agents"""
@@ -52,7 +51,7 @@ class PipelineService:
         self.topic_agent = topic_agent or get_topic_agent()
         self.researcher = researcher or get_agentic_researcher()
         self.blog_writer = blog_writer or get_blog_writer_agent()
-        self.shortform_agent = shortform_agent or get_shortform_agent()
+        self.linkedin_agent = linkedin_agent or get_linkedin_agent()
         self.branding_agent = branding_agent or get_branding_agent()
         logger.info('PipelineService initialized')
 
@@ -208,26 +207,20 @@ class PipelineService:
 
                 # Step 4: Generate social content if requested
                 if generate_social:
-                    logger.info('[PIPELINE] Step 4: Generating social content')
-                    social_results = await self.shortform_agent.generate_from_blog(
-                        blog=blog,
-                        platforms=['linkedin', 'twitter'],
+                    logger.info('[PIPELINE] Step 4: Generating LinkedIn post')
+                    linkedin_output = await self.linkedin_agent.generate_from_blog(
+                        blog_title=blog.title,
+                        blog_content=blog.content,
+                        target_audience=target_audience,
                     )
 
-                    results['social'] = {}
-                    if 'linkedin' in social_results:
-                        li = social_results['linkedin']
-                        results['social']['linkedin'] = {
-                            'character_count': li.character_count,
-                            'hashtags': li.hashtags,
-                            'file_path': li.file_path,
+                    results['social'] = {
+                        'linkedin': {
+                            'character_count': linkedin_output.character_count,
+                            'hashtags': linkedin_output.hashtags,
+                            'file_path': linkedin_output.file_path,
                         }
-                    if 'twitter' in social_results:
-                        tw = social_results['twitter']
-                        results['social']['twitter'] = {
-                            'total_posts': tw.total_posts,
-                            'file_path': tw.file_path,
-                        }
+                    }
                     results['steps_completed'] += 1
 
             # Complete pipeline

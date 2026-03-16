@@ -2,6 +2,8 @@ services:
   app:
     image: ai-research-agent-${ENV_NAME}:${APP_VERSION}
     container_name: ai-research-agent-${ENV_NAME}
+    depends_on:
+      - postgres
     build:
       context: ../../
       dockerfile: docker/local/Dockerfile
@@ -19,7 +21,12 @@ services:
     volumes:
       - ../../volumes/${ENV_NAME}/logs:/app/logs
       - ../../volumes/${ENV_NAME}/data:/app/data
-      - ../../:/app/
+      - ../../app:/app/app
+      - ../../database:/app/database
+      - ../../migrations:/app/migrations
+      - ../../main.py:/app/main.py
+      - ../../entrypoint.sh:/app/entrypoint.sh
+      - ../../alembic.ini:/app/alembic.ini
     restart: unless-stopped
     command: >
       uv run uvicorn main:app --host 0.0.0.0 --port ${APP_PORT} --reload
@@ -29,15 +36,13 @@ services:
         max-size: "10m"
         max-file: "3"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:${APP_PORT}/api/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:${APP_PORT}${APP_ROOT_PATH}/api/health/ai-service"]
       interval: 30s
       timeout: 10s
       retries: 3
     networks:
       - research-network
-    depends_on:
-      postgres:
-        condition: service_healthy
+    
 
   postgres:
     image: postgres:15-alpine
@@ -51,6 +56,7 @@ services:
       POSTGRES_DB: research_db
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ../scripts/init-multiple-dbs:/docker-entrypoint-initdb.d
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d research_db"]
       interval: 5s

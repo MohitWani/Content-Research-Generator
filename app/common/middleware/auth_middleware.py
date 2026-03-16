@@ -34,7 +34,7 @@ async def auth_middleware(
         return await call_next(request)
 
     # Step 1b: Check prefix-based public paths (for routes with path params)
-    public_prefixes = ['/api/v1/research/', '/api/v1/paper/']
+    public_prefixes = ['/api/v1/research/', '/api/v1/paper/', '/api/v1/social/', '/api/health/']
     if any(request.url.path.startswith(prefix) for prefix in public_prefixes):
         return await call_next(request)
 

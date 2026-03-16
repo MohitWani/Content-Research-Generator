@@ -1,20 +1,14 @@
 """Social Schemas"""
 from app.modules.social.schemas.social_schemas import (
+    LinkedInFromBlogRequest,
+    LinkedInFromResearchRequest,
     LinkedInGenerateRequest,
     LinkedInResponse,
-    SocialContentResponse,
-    SocialFromBlogRequest,
-    ThreadPostResponse,
-    ThreadResponse,
-    TwitterThreadRequest,
 )
 
 __all__ = [
+    'LinkedInFromBlogRequest',
+    'LinkedInFromResearchRequest',
     'LinkedInGenerateRequest',
     'LinkedInResponse',
-    'TwitterThreadRequest',
-    'ThreadPostResponse',
-    'ThreadResponse',
-    'SocialFromBlogRequest',
-    'SocialContentResponse',
 ]
